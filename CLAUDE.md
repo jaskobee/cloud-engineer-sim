@@ -64,7 +64,8 @@ the Activity Log: `dispatch` records `Started` + `Succeeded`/`Failed` for every 
 handlers registered in `AZURE_COMMANDS` (the store's default registry). Commands: `scenario/addSubscription`
 (setup, not logged), `arm/resourceGroups/write`, `arm/virtualNetworks/write`, `arm/subnets/write`,
 `arm/networkSecurityGroups/write`, `arm/securityRules/write` + `/delete`, `arm/publicIPAddresses/write`,
-`arm/networkInterfaces/write`. Resources are keyed by the lower-cased ARM ID (ARM-2s); look them up with
+`arm/networkInterfaces/write`, `arm/virtualMachines/write` (creates the OS disk too, VM-15s; power state lives in
+`world.runtime`, VM-7). Resources are keyed by the lower-cased ARM ID (ARM-2s); look them up with
 `azure.getResource`. Subnets and security rules are child resources (SUB-9s, NSG-13s). Activity log
 `operationName` = `{type}/write|delete` (ARM-3s). Every refusal cites a rule; cases Learn doesn't cover are
 `not-modelled`, never guessed. `tests/engine/azure/fixtures.ts` builds the standard test worlds.

@@ -40,6 +40,7 @@ export function CreatePanel({ request }: { request: CreateRequest }) {
       case 'securityRule': return <SecurityRuleForm preset={preset} />
       case 'publicIp': return <PublicIpForm />
       case 'networkInterface': return <NicForm preset={preset} />
+      case 'virtualMachine': return <VmForm />
       default: return <p className="empty">Unknown resource type.</p>
     }
   })()
@@ -362,6 +363,48 @@ function NicForm({ preset }: { preset: Record<string, string> }) {
         summary={[
           ['Name', name], ['Subnet', subnet?.name ?? ''], ['Private IP', method === 'Static' ? address : 'Dynamic'],
           ['Public IP', pips.find(p => p.id === pipId)?.name ?? 'None'], ['Network security group', nsgs.find(n => n.id === nsgId)?.name ?? 'None'],
+        ]} />
+    </>
+  )
+}
+
+function VmForm() {
+  const basics = useBasics('')
+  const nics = useResourcesOfType(azure.NIC_TYPE)
+  const vms = useResourcesOfType(azure.VM_TYPE)
+  const free = nics.filter(n => !vms.some(vm => azure.networkInterfacesOf(vm).some(r => azure.sameName(r.id, n.id))))
+  const [size, setSize] = useState<string>('Standard_B2s_v2')
+  const [disk, setDisk] = useState<string>('StandardSSD_LRS')
+  const [username, setUsername] = useState('')
+  const [nicId, setNicId] = useState(free[0]?.id ?? '')
+  if (!basics.ready) return <NeedsFirst what="Resource group" />
+  if (nics.length === 0) return <NeedsFirst what="Network interface" />
+  const payload = {
+    subscriptionId: basics.subscriptionId, resourceGroupName: basics.resourceGroupName, name: basics.name, location: basics.location,
+    vmSize: size, image: 'Ubuntu2204', osDiskType: disk, adminUsername: username, networkInterfaceId: nicId,
+  }
+  const sizeLabel = (s: (typeof azure.VM_SIZES)[number]) => `${s.name} (${s.vCpus} vCPUs, ${s.memoryGiB} GiB)`
+  return (
+    <>
+      {basics.fields}
+      <dl className="facts">
+        <div><dt>Image</dt><dd>{azure.IMAGES.Ubuntu2204.displayName}</dd></div>
+        <div><dt>Authentication</dt><dd>SSH public key (a simulated key pair)</dd></div>
+      </dl>
+      <SelectField label="Size" value={size} onChange={setSize} options={azure.VM_SIZES.map(s => [s.name, sizeLabel(s)])}
+        hint="Bsv2 sizes are burstable: they earn CPU credits while idle and spend them under load." />
+      <SelectField label="OS disk type" value={disk} onChange={setDisk} options={azure.OS_DISK_TYPES.map(t => [t.sku, `${t.displayName} (${t.sku})`])} />
+      <TextField label="Administrator username" value={username} onChange={setUsername} placeholder="pixelops"
+        hint="1 to 32 characters. Names like admin, root or test aren't allowed." />
+      <SelectField label="Network interface" value={nicId} onChange={setNicId}
+        options={free.length ? free.map(n => [n.id, optionLabel(n)]) : [['', 'All network interfaces are in use']]}
+        hint="Its subnet and public IP decide how the VM is reached. It must be in the VM's region." />
+      <ReviewCreate command={{ type: 'arm/virtualMachines/write', payload }}
+        targetId={azure.resourceId(basics.subscriptionId, basics.resourceGroupName, azure.VM_TYPE, basics.name)}
+        summary={[
+          ['Name', basics.name], ['Region', regionName(basics.location)], ['Image', azure.IMAGES.Ubuntu2204.displayName],
+          ['Size', size], ['OS disk', azure.OS_DISK_TYPES.find(t => t.sku === disk)?.displayName ?? disk],
+          ['Network interface', nics.find(n => n.id === nicId)?.name ?? ''],
         ]} />
     </>
   )

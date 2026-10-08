@@ -81,6 +81,8 @@ function detailOf(r: Resource): string {
     }
     case azure.PUBLIC_IP_TYPE.toLowerCase(): return String(p.ipAddress)
     case azure.NIC_TYPE.toLowerCase(): return azure.ipConfigurationsOf(r)[0]?.properties.privateIPAddress ?? ''
+    case azure.VM_TYPE.toLowerCase(): return String((p.hardwareProfile as { vmSize?: string } | undefined)?.vmSize ?? '')
+    case azure.DISK_TYPE.toLowerCase(): return r.sku?.name ?? ''
     default: return azure.regionDisplayName(r.location)
   }
 }

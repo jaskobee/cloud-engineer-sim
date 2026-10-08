@@ -7,6 +7,7 @@ import { deleteSecurityRule, writeNetworkSecurityGroup, writeSecurityRule } from
 import { writeNetworkInterface, writePublicIpAddress } from './networkInterfaces.ts'
 import { addSubscription, writeResourceGroup } from './resourceGroups.ts'
 import { writeSubnet, writeVirtualNetwork } from './virtualNetworks.ts'
+import { writeVirtualMachine } from './virtualMachines.ts'
 
 export * from './armId.ts'
 export * from './cidr.ts'
@@ -15,6 +16,7 @@ export * from './resourceGroups.ts'
 export * from './virtualNetworks.ts'
 export * from './networkSecurityGroups.ts'
 export * from './networkInterfaces.ts'
+export * from './virtualMachines.ts'
 
 export const AZURE_COMMANDS: readonly CommandHandler[] = [
   addSubscription as CommandHandler,
@@ -26,4 +28,5 @@ export const AZURE_COMMANDS: readonly CommandHandler[] = [
   deleteSecurityRule as CommandHandler,
   writePublicIpAddress as CommandHandler,
   writeNetworkInterface as CommandHandler,
+  writeVirtualMachine as CommandHandler,
 ]

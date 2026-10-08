@@ -87,6 +87,8 @@ export interface HealthReason {
 export interface RuntimeState {
   health: Health
   reasons: HealthReason[]
+  /** Virtual machines only: the power state, as in the instance view `PowerState/<state>` (VM-7). */
+  powerState?: 'creating' | 'starting' | 'running' | 'stopping' | 'stopped' | 'deallocating' | 'deallocated'
 }
 
 // ── OUTSIDE WORLD ───────────────────────────────────────────────────────────────────────────────

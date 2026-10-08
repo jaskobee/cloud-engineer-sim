@@ -18,6 +18,7 @@ export const RESOURCE_KINDS: readonly ResourceKind[] = [
   { kind: 'securityRule', label: 'Security rule', blurb: 'One allow or deny rule. Lower priority numbers are processed first.', rule: 'NSG-1' },
   { kind: 'publicIp', label: 'Public IP address', blurb: 'A public address. Standard is closed to inbound traffic until an NSG allows it.', rule: 'PIP-1' },
   { kind: 'networkInterface', label: 'Network interface', blurb: 'Connects a virtual machine to a subnet.', rule: 'NIC-2' },
+  { kind: 'virtualMachine', label: 'Virtual machine', blurb: 'A Linux server. It is billed while running and stops costing compute when deallocated.', rule: 'VM-7' },
 ]
 
 const TYPE_LABELS: Record<string, string> = {
@@ -27,6 +28,8 @@ const TYPE_LABELS: Record<string, string> = {
   [azure.SECURITY_RULE_TYPE.toLowerCase()]: 'Security rule',
   [azure.PUBLIC_IP_TYPE.toLowerCase()]: 'Public IP address',
   [azure.NIC_TYPE.toLowerCase()]: 'Network interface',
+  [azure.VM_TYPE.toLowerCase()]: 'Virtual machine',
+  [azure.DISK_TYPE.toLowerCase()]: 'Disk',
 }
 
 export const typeLabel = (type: string): string => TYPE_LABELS[type.toLowerCase()] ?? type

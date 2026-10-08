@@ -47,6 +47,13 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | L-TPL-NIC | Template reference `Microsoft.Network/networkInterfaces` (API 2025-09-01) — https://learn.microsoft.com/en-us/azure/templates/microsoft.network/networkinterfaces |
 | L-TPL-PIP | Template reference `Microsoft.Network/publicIPAddresses` — https://learn.microsoft.com/en-us/azure/templates/microsoft.network/publicipaddresses |
 | L-MOVE | Move Azure resources to a new resource group or subscription — https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription |
+| L-VMSTATES | States and billing status of Azure Virtual Machines — https://learn.microsoft.com/en-us/azure/virtual-machines/states-billing |
+| L-FINDIMG | Find Azure Marketplace VM images with the Azure CLI — https://learn.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage |
+| L-DISKS | Azure managed disk types — https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types |
+| L-DISKSKU | `DiskStorageAccountTypes` (Azure SDK for JavaScript reference) — https://learn.microsoft.com/en-us/javascript/api/@azure/arm-compute/diskstorageaccounttypes |
+| L-BSV2 | Bsv2 sizes series — https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/general-purpose/bsv2-series |
+| L-TPL-VM | Template reference `Microsoft.Compute/virtualMachines` (API 2026-03-01) — https://learn.microsoft.com/en-us/azure/templates/microsoft.compute/virtualmachines |
+| L-SSHKEY | `SshPublicKey` (Azure SDK for JavaScript reference) — https://learn.microsoft.com/en-us/javascript/api/@azure/arm-compute/sshpublickey |
 | L-ACA-NSG | Container Apps: securing a virtual network with NSGs (future) — https://learn.microsoft.com/en-us/azure/container-apps/firewall-integration |
 
 ---
@@ -151,6 +158,22 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | VM-4 | Portal Linux VM: authentication type "SSH public key", key source "Generate new key pair". Inbound port rules "Public inbound ports → Allow selected ports" | L-VMQS | VERIFIED |
 | VM-5 | Effective security rules are only shown when the VM is running and an NSG is associated with its NIC or subnet | L-ESR | VERIFIED |
 | VM-6s | Sim: the game API and PostgreSQL are modelled as services with health on the VM, not a simulated guest OS (labelled in-game) | — | SIM |
+| VM-1s | Sim: VM names use the VM-1 character list literally (no periods or underscores at all, no trailing hyphen), which is stricter than its note about Linux names not *ending* with a period. The portal uses the same value for resource name and host name (L-NAMES note), so the sim does too | — | SIM |
+| VM-7 | Power states: Creating, Starting, Running ("the standard working state"), Stopping, Stopped (allocated, still billed), Deallocating, Deallocated (released the hardware, compute not billed). The instance view shows e.g. `PowerState/running` | L-VMSTATES | VERIFIED |
+| VM-8 | Provisioning states describe the last control-plane operation and are separate from power state: Creating, Updating, Failed, Succeeded, Deleting, Migrating | L-VMSTATES | VERIFIED |
+| VM-9 | ARM property names: `hardwareProfile.vmSize`; `storageProfile.imageReference` (`publisher`, `offer`, `sku`, `version`); `storageProfile.osDisk` (`createOption` Attach/Copy/Empty/FromImage/Restore, `osType` Linux/Windows, `managedDisk.storageAccountType`, `deleteOption` Delete/Detach); `osProfile` (`computerName`, `adminUsername`, `linuxConfiguration.disablePasswordAuthentication`, `linuxConfiguration.ssh.publicKeys[]` with `path` and `keyData`); `networkProfile.networkInterfaces[]` (`id`, `properties.primary`, `properties.deleteOption`) | L-TPL-VM | VERIFIED |
+| VM-10 | Disk SKUs: Standard_LRS = Standard HDD, StandardSSD_LRS = Standard SSD, Premium_LRS = Premium SSD, PremiumV2_LRS = Premium SSD v2, UltraSSD_LRS = Ultra SSD, plus Premium_ZRS and StandardSSD_ZRS (zone-redundant) | L-DISKSKU | VERIFIED |
+| VM-11 | Ultra Disks and Premium SSD v2 can't be used as OS disks. Premium SSD, Standard SSD and Standard HDD can. "On September 8, 2028, the ability to use Standard HDDs as OS disks will be retired." | L-DISKS | VERIFIED |
+| VM-11s | Sim: OS disk SKUs offered are Premium_LRS, StandardSSD_LRS and Standard_LRS. ZRS SKUs aren't modelled (no availability zones yet) | — | SIM |
+| VM-12 | Ubuntu 22.04 image: publisher `Canonical`, offer `0001-com-ubuntu-server-jammy`, SKU `22_04-lts-gen2`, version `latest`, URN alias `Ubuntu2204` (sample `az vm image list` output) | L-FINDIMG | VERIFIED |
+| VM-12s | Sim: Ubuntu 22.04 (VM-12) is the only image offered. Ubuntu 24.04 isn't, because no Learn page found so far shows its URN | — | SIM |
+| VM-13 | Bsv2 (burstable, CPU credit model): Standard_B2ts_v2 2 vCPUs / 1 GiB, Standard_B2ls_v2 2 vCPUs / 4 GiB, Standard_B2s_v2 2 vCPUs / 8 GiB | L-BSV2 | VERIFIED |
+| VM-13s | Sim: these three sizes are offered in every sim region. Per-region size availability and quotas aren't modelled | — | SIM |
+| VM-14 | Managed disk name (`Microsoft.Compute/disks`): scope resource group, 1–80 chars, alphanumerics, underscores and hyphens | L-NAMES | VERIFIED |
+| VM-15s | Sim: creating a VM from an image also creates its managed OS disk as a `Microsoft.Compute/disks` resource named `<vm>_OsDisk_1` (made-up default). Only the VM write appears in the activity log; whether Azure logs a separate disk write isn't modelled | — | SIM |
+| VM-16s | Sim: a VM is created with one existing NIC as its primary NIC, SSH key authentication only (VM-3s; the key pair is simulated, never a real key), and is Running as soon as the write succeeds (ARM-1s, VM-7) | — | SIM |
+| VM-17u | Creating a VM with a NIC that's already attached to another VM | — | UNCERTAIN, refused as not modelled |
+| VM-18 | SSH public key: `path` is "the full path on the created VM where ssh public key is stored … Example: /home/user/.ssh/authorized_keys". `keyData` is the public key ("at least 2048-bit and in ssh-rsa format") | L-SSHKEY | VERIFIED |
 
 ## NW — Network Watcher diagnostics
 
@@ -202,7 +225,7 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 |---|---|---|---|
 | ARM-1u | The set of `provisioningState` values. Resolved 2026-10-08 for Microsoft.Network by ARM-1 | — | RESOLVED → ARM-1 |
 | ARM-1 | Microsoft.Network `ProvisioningState` values: Failed, Succeeded, Canceled, Creating, Updating, Deleting. Sample responses show `Succeeded` | L-NSGREST | VERIFIED |
-| ARM-1s | Sim: until the deployment engine (step 6), accepted writes are `Succeeded` immediately. Other providers' state sets (Compute, Insights) are checked when those types arrive | — | SIM |
+| ARM-1s | Sim: until the deployment engine (step 6), accepted writes are `Succeeded` immediately. Compute's provisioning states are VM-8; Insights' are checked when those types arrive | — | SIM |
 | ARM-2 | Resource ID formats. Resource group: `/subscriptions/{subscriptionId}/resourceGroups/{name}` (REST sample). Resource: `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}`. Child resources append `/{childType}/{childName}` after the parent's name (`Microsoft.Compute/virtualMachines/myVM/extensions/myExt`) | L-RID, L-RGREST | VERIFIED |
 | ARM-2s | Sim: the world keys resources by the lower-cased ID (NAME-6) and keeps the original casing in `id` | — | SIM |
 | ARM-3 | RBAC action strings have the format `{Company}.{ProviderName}/{resourceType}/{action}`. `write` = PUT or PATCH, `delete` = DELETE, `action` = POST | L-RBACDEF | VERIFIED |
@@ -210,7 +233,7 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | RG-1 | A resource group's location is where its metadata is stored. "Resources inside a resource group can be in different regions." | L-RGPORTAL | VERIFIED |
 | RG-2u | Updating an existing resource group (e.g. a different location in a second PUT) | — | UNCERTAIN, not modelled |
 | RG-3 | The action for writing a resource group is `Microsoft.Resources/subscriptions/resourceGroups/write` (required at the destination of a move). Sim: it's the resource group write's activity log `operationName` (ARM-3s) | L-MOVE | VERIFIED |
-| ARM-4u | A second PUT that changes an existing NSG's or public IP's top-level settings (location, tags, SKU) | — | UNCERTAIN, not modelled yet |
+| ARM-4u | A second PUT that changes an existing NSG's, public IP's or VM's settings (location, tags, SKU, size) | — | UNCERTAIN, not modelled yet |
 | REG-1 | Regions offered by the sim: West Europe `westeurope` (Netherlands), North Europe `northeurope` (Ireland), Germany West Central `germanywestcentral` (Frankfurt). Each has 3 availability zones | L-REGIONS | VERIFIED (other regions not modelled) |
 
 ## FUTURE — Facts kept for later missions
@@ -228,3 +251,4 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | 2026-10-08 | Register created for the PixelForge VM slice |
 | 2026-10-08 | Added L-ACTSCHEMA and MON-8 to MON-13s (activity log events) for the engine core (step 2). Narrowed MON-7u |
 | 2026-10-08 | Step 4 research: added L-PLAN, L-PRIVIP, L-NICADDR, L-RGPORTAL, L-RGREST, L-RID, L-RBACDEF, L-REGIONS, L-NSGREST and template references. New VNET-6..9u, SUB-8, SUB-9s, NSG-2s, NSG-11..13s, PIP-6..9u, NIC-7, NIC-8s, PRIV-1..3, NAME-6..8, ARM-1..3s, RG-1, RG-2u, REG-1. Resolved ARM-1u and MON-7u. NSG-2u narrowed (still open) |
+| 2026-10-09 | Step 4c research (VMs): L-VMSTATES, L-FINDIMG, L-DISKS, L-DISKSKU, L-BSV2, L-TPL-VM. New VM-1s, VM-7..VM-17u. ARM-4u widened to VMs |

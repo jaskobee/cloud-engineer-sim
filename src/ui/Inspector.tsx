@@ -151,9 +151,59 @@ function TypeDetails({ tenant, resource }: { tenant: Tenant; resource: Resource 
         </>
       )
     }
+    case azure.VM_TYPE.toLowerCase(): {
+      const props = p as {
+        hardwareProfile: { vmSize: string }
+        storageProfile: { osDisk: { name: string; managedDisk: { id: string; storageAccountType: string } } }
+        osProfile: { adminUsername: string }
+      }
+      const nicRef = azure.networkInterfacesOf(resource)[0]
+      const nic = nicRef ? tenant.resources[azure.armKey(nicRef.id)] : undefined
+      const config = nic ? azure.ipConfigurationsOf(nic)[0] : undefined
+      const pip = config?.properties.publicIPAddress ? tenant.resources[azure.armKey(config.properties.publicIPAddress.id)] : undefined
+      return (
+        <>
+          <PowerState id={resource.id} />
+          <Facts rows={[
+            ['Size', props.hardwareProfile.vmSize],
+            ['Image', azure.IMAGES.Ubuntu2204.displayName],
+            ['OS disk', `${props.storageProfile.osDisk.name} (${props.storageProfile.osDisk.managedDisk.storageAccountType})`],
+            ['Administrator', props.osProfile.adminUsername],
+            ['Network interface', nic?.name ?? 'None'],
+            ['Private IP address', config?.properties.privateIPAddress ?? ''],
+            ['Public IP address', pip ? String(pip.properties.ipAddress) : 'None'],
+          ]} />
+          {nic && (
+            <div className="inspector-actions">
+              <button type="button" className="button" onClick={() => select(nic.id)}>Open {nic.name}</button>
+            </div>
+          )}
+        </>
+      )
+    }
+    case azure.DISK_TYPE.toLowerCase():
+      return (
+        <Facts rows={[
+          ['Disk type', `${azure.OS_DISK_TYPES.find(t => t.sku === resource.sku?.name)?.displayName ?? ''} (${resource.sku?.name ?? ''})`],
+          ['OS', String(p.osType)],
+          ['Attached to', nameOf(tenant, String(p.managedBy))],
+        ]} />
+      )
     default:
       return null
   }
+}
+
+/** Power state from the runtime record (VM-7), not from the desired configuration. */
+function PowerState({ id }: { id: ArmId }) {
+  const state = useGame(s => s.world.runtime[azure.armKey(id)]?.powerState ?? null)
+  const label = state ? state[0]?.toUpperCase() + state.slice(1) : 'Unknown'
+  return (
+    <p className={`power power-${state ?? 'unknown'}`}>
+      <span className="power-led" aria-hidden="true" />
+      {label}
+    </p>
+  )
 }
 
 const PROTOCOL_LABEL: Record<string, string> = { '*': 'Any', Tcp: 'TCP', Udp: 'UDP', Icmp: 'ICMP', Esp: 'ESP', Ah: 'AH' }
