@@ -2,15 +2,22 @@
  * Simulation engine: headless, pure and deterministic.
  *
  * Everything the player sees (canvas, inspector, logs, metrics, missions) is a view of the
- * world this engine owns. The world changes in exactly two ways: a command, or time (`step`).
+ * world this engine owns. The world changes in exactly two ways: a command (`dispatch`),
+ * or time (`step` / `advance`).
  *
  * Enforced by tests/boundaries.test.ts:
  *   - no React, DOM or UI imports, and no relative imports that leave src/engine;
  *   - no wall-clock time or unseeded randomness: time comes from the sim clock,
- *     randomness from a seeded RNG (both arrive in step 2).
+ *     randomness from the seeded RNG streams in the world.
  *
- * Azure behaviour implemented here must cite a rule ID from Docs/AZURE_FACTS.md.
+ * Azure behaviour implemented here must cite a rule ID from Docs/AZURE_FACTS.md
+ * (checked by tests/facts.test.ts).
  */
 
-/** Version of the saved world format. Bump it (and add a migration) on any breaking change. */
-export const WORLD_SCHEMA_VERSION = 1 as const
+export * from './world.ts'
+export * from './clock.ts'
+export * from './commands.ts'
+export * from './activityLog.ts'
+export * from './registry.ts'
+export * from './save.ts'
+export { SIM_COMMANDS } from './simCommands.ts'

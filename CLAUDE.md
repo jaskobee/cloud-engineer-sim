@@ -50,6 +50,14 @@ tests/        engine and mission tests (Vitest)
 Docs/         vision, rules, facts register, decisions
 ```
 
+## Engine API (step 2)
+
+`createWorld({ seed, epochMs })` · commands: `createRegistry(handlers)`, `dispatch(world, registry, cmd)`,
+`dryRun(...)` for Review + create · time: `step(world, simMs)`, `advance(world, realMs)` (speed/pause) ·
+`saveWorld` / `loadWorld`. Handlers return refusals with a `ruleId` from `AZURE_FACTS.md` and never write
+the Activity Log: `dispatch` records `Started` + `Succeeded`/`Failed` for every write (MON-8).
+`tests/facts.test.ts` fails if `src/` cites a rule ID that isn't in the register.
+
 ## Working discipline
 
 - Small, reviewable steps (see `Docs/BOOTSTRAP_REPORT.md` §I). Finish each with `npm run check`.

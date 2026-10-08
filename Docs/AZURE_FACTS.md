@@ -32,6 +32,7 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | L-AVAIL | Application Insights availability tests — https://learn.microsoft.com/en-us/azure/azure-monitor/app/availability |
 | L-VMMETRICS | Supported metrics for Microsoft.Compute/virtualMachines — https://learn.microsoft.com/en-us/azure/azure-monitor/reference/supported-metrics/microsoft-compute-virtualmachines-metrics |
 | L-ACTLOG | Azure Monitor activity log — https://learn.microsoft.com/en-us/azure/azure-monitor/platform/activity-log |
+| L-ACTSCHEMA | Azure activity log event schema — https://learn.microsoft.com/en-us/azure/azure-monitor/platform/activity-log-schema |
 | L-ACA-NSG | Container Apps: securing a virtual network with NSGs (future) — https://learn.microsoft.com/en-us/azure/container-apps/firewall-integration |
 
 ---
@@ -134,7 +135,14 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | MON-5u | Application Insights resources must be workspace-based (backed by a Log Analytics workspace) | — | UNCERTAIN, find and cite the Learn page before modelling the dependency |
 | MON-6 | VM platform metrics (REST name = display name): `Percentage CPU` (Percent, Average), `Network In Total` (Bytes, Total), `Network Out Total` (Bytes, Total), `Available Memory Bytes` (Bytes, Average), `Available Memory Percentage` (Percent, Average), `VmAvailabilityMetric` (Count) | L-VMMETRICS | VERIFIED |
 | MON-7 | The activity log records control-plane (management) operations: create, update, delete and actions, e.g. creating a VM. It doesn't typically capture reads. Events are kept 90 days. Subscription scope is the default. Portal filters include Operation, Event initiated by, Event category (e.g. Administrative) | L-ACTLOG | VERIFIED |
-| MON-7u | Exact operation names/display strings shown for NSG rule writes (e.g. `Microsoft.Network/networkSecurityGroups/securityRules/write`) | L-ACTLOG | UNCERTAIN, find the event schema page and cite it |
+| MON-7u | Exact `operationName` for NSG *security rule* writes (expected `Microsoft.Network/networkSecurityGroups/securityRules/write`, but the schema page's sample only shows the NSG write) | L-ACTSCHEMA | UNCERTAIN, confirm before step 4 models rule writes |
+| MON-8 | Administrative category: "If the operation type is Write, Delete, or Action, the records of both the start and success or fail of that operation are recorded" | L-ACTSCHEMA | VERIFIED |
+| MON-9 | Event fields (Administrative): `caller` (email address, UPN claim or SPN claim of who performed the operation), `category` (always `Administrative`), `correlationId` (usually a GUID; events sharing it belong to the same "uber action"), `operationId` (GUID shared among the events of a single operation), `eventDataId` (unique per event), `operationName` (e.g. `Microsoft.Network/networkSecurityGroups/write`), `resourceId`, `resourceGroupName`, `resourceProviderName`, `resourceType`, `status`, `subStatus` (usually the HTTP status code), `eventTimestamp`, `submissionTimestamp`, `subscriptionId`, `level`. The schema "isn't strictly enforced across all data sources" | L-ACTSCHEMA | VERIFIED |
+| MON-10 | Common `status` values: Started, In Progress, Succeeded, Failed, Active, Resolved | L-ACTSCHEMA | VERIFIED |
+| MON-10s | Sim: every write records a `Started` event and then a `Succeeded` or `Failed` event with the same `operationId` and `correlationId`. A write the control plane refuses is `Started` + `Failed`. Until the deployment engine (step 6), accepted writes complete at the same sim instant | — | SIM |
+| MON-11u | Whether portal "Review + create" validation (a dry run) appears in the activity log | — | UNCERTAIN. Sim doesn't log dry runs |
+| MON-12u | `level` and `subStatus` values for failed or refused writes (the sample event only shows `Informational`) | L-ACTSCHEMA | UNCERTAIN. Sim doesn't model `level` or `subStatus` yet |
+| MON-13s | Sim: activity log entries older than 90 sim days are dropped (MON-7 retention) | — | SIM |
 
 ## NAME — Other naming rules
 
@@ -165,3 +173,4 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | Date | Change |
 |---|---|
 | 2026-10-08 | Register created for the PixelForge VM slice |
+| 2026-10-08 | Added L-ACTSCHEMA and MON-8 to MON-13s (activity log events) for the engine core (step 2). Narrowed MON-7u |
