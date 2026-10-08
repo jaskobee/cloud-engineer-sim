@@ -77,6 +77,16 @@ only through `store.dispatch(command)` (caller defaults to the player) and time 
 localStorage save slot (T-6). Components read with `useGame(selector)` and select the smallest value they need.
 The bottom panel lists only tools that work.
 
+## Building in the UI (step 4b)
+
+*Create a resource* opens in the inspector pane (`CreatePanel.tsx`): type picker → form → `ReviewCreate.tsx`, which
+dry-runs the exact command (`store.check`) before **Create** dispatches it. Editing is the same form with
+`preset.mode = 'edit'` (a write to the same name updates). `RefusalNotice.tsx` says whose rule it is: an Azure
+rule, or a case the simulator doesn't model; it shows the rule ID and its Learn link. Those come from
+`Docs/AZURE_FACTS.md` itself, imported at build time (`src/ui/facts.ts`), so the register is the only copy.
+`ResourceList.tsx` is a temporary list in the canvas area until the canvas (step 7). New worlds include the
+made-up sandbox subscription (`SANDBOX_SUBSCRIPTION`).
+
 ## Working discipline
 
 - Small, reviewable steps (see `Docs/BOOTSTRAP_REPORT.md` §I). Finish each with `npm run check`.

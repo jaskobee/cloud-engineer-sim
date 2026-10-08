@@ -1,0 +1,34 @@
+import { azure } from '../engine/index.ts'
+
+/** What the player can create, in the order a network is usually built. */
+export interface ResourceKind {
+  kind: string
+  label: string
+  /** One plain sentence, taken from the cited rule. */
+  blurb: string
+  /** The AZURE_FACTS rule the blurb comes from. */
+  rule: string
+}
+
+export const RESOURCE_KINDS: readonly ResourceKind[] = [
+  { kind: 'resourceGroup', label: 'Resource group', blurb: 'Holds related resources. Its region is where its metadata is stored.', rule: 'RG-1' },
+  { kind: 'virtualNetwork', label: 'Virtual network', blurb: 'A private network in one Azure region.', rule: 'VNET-1' },
+  { kind: 'subnet', label: 'Subnet', blurb: 'An address range inside a virtual network. Azure reserves five addresses in each.', rule: 'SUB-2' },
+  { kind: 'networkSecurityGroup', label: 'Network security group', blurb: 'Rules that allow or deny traffic for a subnet or a network interface.', rule: 'NSG-12' },
+  { kind: 'securityRule', label: 'Security rule', blurb: 'One allow or deny rule. Lower priority numbers are processed first.', rule: 'NSG-1' },
+  { kind: 'publicIp', label: 'Public IP address', blurb: 'A public address. Standard is closed to inbound traffic until an NSG allows it.', rule: 'PIP-1' },
+  { kind: 'networkInterface', label: 'Network interface', blurb: 'Connects a virtual machine to a subnet.', rule: 'NIC-2' },
+]
+
+const TYPE_LABELS: Record<string, string> = {
+  [azure.VNET_TYPE.toLowerCase()]: 'Virtual network',
+  [azure.SUBNET_TYPE.toLowerCase()]: 'Subnet',
+  [azure.NSG_TYPE.toLowerCase()]: 'Network security group',
+  [azure.SECURITY_RULE_TYPE.toLowerCase()]: 'Security rule',
+  [azure.PUBLIC_IP_TYPE.toLowerCase()]: 'Public IP address',
+  [azure.NIC_TYPE.toLowerCase()]: 'Network interface',
+}
+
+export const typeLabel = (type: string): string => TYPE_LABELS[type.toLowerCase()] ?? type
+
+export const kindLabel = (kind: string): string => RESOURCE_KINDS.find(k => k.kind === kind)?.label ?? kind

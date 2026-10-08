@@ -1,0 +1,244 @@
+import { useState } from 'react'
+import { azure, type ArmId, type Refusal, type Resource, type Tenant } from '../engine/index.ts'
+import { useGame } from './gameContext.ts'
+import { RefusalNotice } from './RefusalNotice.tsx'
+import { typeLabel } from './resourceKinds.ts'
+
+/** Details of the selected resource group or resource, read from the same world as everything else. */
+export function Inspector({ id }: { id: ArmId }) {
+  const tenant = useGame(s => s.world.tenant)
+  const group = tenant.resourceGroups[azure.armKey(id)]
+  const resource = tenant.resources[azure.armKey(id)]
+  const parsed = azure.parseArmId(id)
+
+  if (group) {
+    const count = Object.values(tenant.resources).filter(r => azure.sameName(azure.parseArmId(r.id)?.resourceGroupName ?? '', group.name)).length
+    return (
+      <div className="inspector">
+        <p className="inspector-type">Resource group</p>
+        <h2 className="inspector-name">{group.name}</h2>
+        <Facts rows={[['Region', azure.regionDisplayName(group.location)], ['Resources', String(count)]]} />
+        <IdLine id={group.id} />
+      </div>
+    )
+  }
+  if (!resource || !parsed) return <p className="empty">This resource no longer exists.</p>
+
+  return (
+    <div className="inspector">
+      <p className="inspector-type">{typeLabel(resource.type)}</p>
+      <h2 className="inspector-name">{resource.name}</h2>
+      <Facts rows={[
+        ['Resource group', parsed.resourceGroupName],
+        ['Region', azure.regionDisplayName(resource.location)],
+        ['Provisioning state', resource.provisioningState],
+        ['Created by', resource.createdBy],
+      ]} />
+      <TypeDetails tenant={tenant} resource={resource} />
+      <IdLine id={resource.id} />
+    </div>
+  )
+}
+
+function Facts({ rows }: { rows: [string, string][] }) {
+  return (
+    <dl className="facts">
+      {rows.map(([label, value]) => (
+        <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
+      ))}
+    </dl>
+  )
+}
+
+function IdLine({ id }: { id: ArmId }) {
+  return <p className="resource-id"><span>Resource ID</span><code>{id}</code></p>
+}
+
+const of = (tenant: Tenant, type: string) => Object.values(tenant.resources).filter(r => r.type.toLowerCase() === type.toLowerCase())
+const childrenOf = (tenant: Tenant, parent: Resource, type: string) =>
+  of(tenant, type).filter(r => r.id.toLowerCase().startsWith(`${parent.id.toLowerCase()}/`))
+const nameOf = (tenant: Tenant, id: string | null | undefined) => (id ? tenant.resources[id.toLowerCase()]?.name ?? id : 'None')
+
+function TypeDetails({ tenant, resource }: { tenant: Tenant; resource: Resource }) {
+  const startCreate = useGame(s => s.startCreate)
+  const select = useGame(s => s.select)
+  const p = resource.properties
+
+  switch (resource.type.toLowerCase()) {
+    case azure.VNET_TYPE.toLowerCase(): {
+      const subnets = childrenOf(tenant, resource, azure.SUBNET_TYPE)
+      return (
+        <>
+          <Facts rows={[['Address space', azure.addressPrefixesOf(resource).join(', ')], ['Subnets', subnets.map(s => s.name).join(', ') || 'None yet']]} />
+          <div className="inspector-actions">
+            <button type="button" className="button" onClick={() => startCreate({ kind: 'subnet', preset: { virtualNetworkId: resource.id } })}>Add a subnet</button>
+          </div>
+        </>
+      )
+    }
+    case azure.SUBNET_TYPE.toLowerCase(): {
+      const block = azure.parseCidr(String(p.addressPrefix))
+      const nsgId = (p.networkSecurityGroup as { id?: string } | undefined)?.id ?? null
+      const nics = of(tenant, azure.NIC_TYPE).filter(n => azure.ipConfigurationsOf(n).some(c => azure.sameName(c.properties.subnet.id, resource.id)))
+      return (
+        <>
+          <Facts rows={[
+            ['Address range', String(p.addressPrefix)],
+            // Azure reserves five addresses in every subnet (SUB-2).
+            ['Usable addresses', block ? String(block.size - 5) : '?'],
+            ['Network security group', nameOf(tenant, nsgId)],
+            ['Network interfaces', nics.map(n => n.name).join(', ') || 'None'],
+            ['Default outbound access', p.defaultOutboundAccess === false ? 'Off (private subnet)' : 'On'],
+          ]} />
+          <div className="inspector-actions">
+            <button type="button" className="button" onClick={() => startCreate({
+              kind: 'subnet',
+              preset: { mode: 'edit', virtualNetworkId: azure.parentResourceId(resource.id) ?? '', name: resource.name, addressPrefix: String(p.addressPrefix), networkSecurityGroupId: nsgId ?? '' },
+            })}>Edit subnet</button>
+          </div>
+        </>
+      )
+    }
+    case azure.NSG_TYPE.toLowerCase():
+      return <NsgDetails tenant={tenant} nsg={resource} />
+    case azure.SECURITY_RULE_TYPE.toLowerCase(): {
+      const rule = azure.ruleProperties(resource)
+      const nsgId = azure.parentResourceId(resource.id) ?? ''
+      return (
+        <>
+          <Facts rows={ruleRows(rule)} />
+          <div className="inspector-actions">
+            <button type="button" className="button" onClick={() => select(nsgId)}>Open {nameOf(tenant, nsgId)}</button>
+          </div>
+        </>
+      )
+    }
+    case azure.PUBLIC_IP_TYPE.toLowerCase(): {
+      const nic = of(tenant, azure.NIC_TYPE).find(n => azure.ipConfigurationsOf(n).some(c => azure.sameName(c.properties.publicIPAddress?.id ?? '', resource.id)))
+      return (
+        <Facts rows={[
+          // Made-up address from a documentation range (PIP-7s).
+          ['IP address', `${String(p.ipAddress)} (made up)`],
+          ['SKU', `${resource.sku?.name ?? ''}, ${resource.sku?.tier ?? ''}`],
+          ['Assignment', `${String(p.publicIPAllocationMethod)}, ${String(p.publicIPAddressVersion)}`],
+          ['Associated with', nic?.name ?? 'Nothing'],
+        ]} />
+      )
+    }
+    case azure.NIC_TYPE.toLowerCase(): {
+      const config = azure.ipConfigurationsOf(resource)[0]
+      const nsgId = azure.nicNsgId(resource)
+      const parsed = azure.parseArmId(resource.id)
+      return (
+        <>
+          <Facts rows={[
+            ['Subnet', nameOf(tenant, config?.properties.subnet.id)],
+            ['Private IP address', `${config?.properties.privateIPAddress ?? ''} (${config?.properties.privateIPAllocationMethod ?? ''})`],
+            ['Public IP address', nameOf(tenant, config?.properties.publicIPAddress?.id)],
+            ['Network security group', nameOf(tenant, nsgId)],
+          ]} />
+          <div className="inspector-actions">
+            <button type="button" className="button" onClick={() => startCreate({
+              kind: 'networkInterface',
+              preset: {
+                mode: 'edit', group: `${parsed?.subscriptionId ?? ''}|${parsed?.resourceGroupName ?? ''}`, name: resource.name, location: resource.location,
+                subnetId: config?.properties.subnet.id ?? '', privateIPAllocationMethod: config?.properties.privateIPAllocationMethod ?? 'Dynamic',
+                privateIPAddress: config?.properties.privateIPAddress ?? '', publicIPAddressId: config?.properties.publicIPAddress?.id ?? '',
+                networkSecurityGroupId: nsgId ?? '',
+              },
+            })}>Edit network interface</button>
+          </div>
+        </>
+      )
+    }
+    default:
+      return null
+  }
+}
+
+const PROTOCOL_LABEL: Record<string, string> = { '*': 'Any', Tcp: 'TCP', Udp: 'UDP', Icmp: 'ICMP', Esp: 'ESP', Ah: 'AH' }
+
+function ruleRows(rule: azure.SecurityRuleProperties): [string, string][] {
+  return [
+    ['Priority', String(rule.priority)],
+    ['Direction', rule.direction],
+    ['Action', rule.access],
+    ['Protocol', PROTOCOL_LABEL[rule.protocol] ?? rule.protocol],
+    ['Source', `${rule.sourceAddressPrefix}, port ${rule.sourcePortRange}`],
+    ['Destination', `${rule.destinationAddressPrefix}, port ${rule.destinationPortRange}`],
+    ...(rule.description ? [['Description', rule.description] as [string, string]] : []),
+  ]
+}
+
+/** An NSG's rules in the order Azure processes them: custom rules by priority, then the defaults (NSG-1, NSG-3). */
+function NsgDetails({ tenant, nsg }: { tenant: Tenant; nsg: Resource }) {
+  const startCreate = useGame(s => s.startCreate)
+  const select = useGame(s => s.select)
+  const dispatch = useGame(s => s.dispatch)
+  const [refusal, setRefusal] = useState<Refusal | null>(null)
+  const custom = childrenOf(tenant, nsg, azure.SECURITY_RULE_TYPE)
+  const defaults = (nsg.properties.defaultSecurityRules as azure.DefaultSecurityRule[] | undefined) ?? []
+  const subnets = of(tenant, azure.SUBNET_TYPE).filter(s => azure.sameName((s.properties.networkSecurityGroup as { id?: string } | undefined)?.id ?? '', nsg.id))
+  const nics = of(tenant, azure.NIC_TYPE).filter(n => azure.sameName(azure.nicNsgId(n) ?? '', nsg.id))
+
+  const remove = (ruleId: ArmId) => {
+    const outcome = dispatch({ type: 'arm/securityRules/delete', payload: { securityRuleId: ruleId } })
+    setRefusal(outcome.status === 'refused' ? outcome.refusal : null)
+  }
+  const edit = (r: Resource) => {
+    const rule = azure.ruleProperties(r)
+    startCreate({
+      kind: 'securityRule',
+      preset: {
+        mode: 'edit', networkSecurityGroupId: nsg.id, name: r.name, priority: String(rule.priority), direction: rule.direction,
+        access: rule.access, protocol: rule.protocol, sourceAddressPrefix: rule.sourceAddressPrefix, sourcePortRange: rule.sourcePortRange,
+        destinationAddressPrefix: rule.destinationAddressPrefix, destinationPortRange: rule.destinationPortRange, description: rule.description ?? '',
+      },
+    })
+  }
+
+  return (
+    <>
+      <Facts rows={[
+        ['Subnets', subnets.map(s => s.name).join(', ') || 'None'],
+        ['Network interfaces', nics.map(n => n.name).join(', ') || 'None'],
+      ]} />
+      {refusal && <RefusalNotice refusal={refusal} />}
+      {(['Inbound', 'Outbound'] as const).map(direction => {
+        const rules = [
+          ...custom.map(r => ({ resource: r as Resource | null, name: r.name, rule: azure.ruleProperties(r) })),
+          ...defaults.map(d => ({ resource: null, name: d.name, rule: d as azure.SecurityRuleProperties })),
+        ].filter(x => x.rule.direction === direction).sort((a, b) => a.rule.priority - b.rule.priority)
+        return (
+          <section key={direction} className="rules" aria-label={`${direction} security rules`}>
+            <h3 className="rules-title">{direction} rules, in processing order</h3>
+            <ol className="rule-list">
+              {rules.map(({ resource, name, rule }) => (
+                <li key={name} className={resource ? 'rule-item' : 'rule-item rule-default'}>
+                  <span className="rule-priority mono">{rule.priority}</span>
+                  <span className="rule-main">
+                    {resource ? <button type="button" className="link-button rule-name" onClick={() => select(resource.id)}>{name}</button> : <span className="rule-name">{name}</span>}
+                    <span className="rule-desc">
+                      {PROTOCOL_LABEL[rule.protocol] ?? rule.protocol} port {rule.destinationPortRange} from {rule.sourceAddressPrefix}
+                    </span>
+                    {resource && (
+                      <span className="rule-actions">
+                        <button type="button" className="link-button" onClick={() => edit(resource)}>Edit</button>
+                        <button type="button" className="link-button danger" onClick={() => remove(resource.id)}>Delete</button>
+                      </span>
+                    )}
+                  </span>
+                  <span className={`access access-${rule.access.toLowerCase()}`}>{rule.access}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )
+      })}
+      <p className="field-hint">Default rules can't be changed. Add rules with a lower number to override them.</p>
+      <div className="inspector-actions">
+        <button type="button" className="button" onClick={() => startCreate({ kind: 'securityRule', preset: { networkSecurityGroupId: nsg.id } })}>Add a security rule</button>
+      </div>
+    </>
+  )
+}

@@ -11,6 +11,8 @@
   --text: #17212b;
   --text-muted: #5b6875;
   --accent: #0b6bcb;
+  /* Text on an accent-filled control. */
+  --on-accent: #ffffff;
   --state-ok: #1f9d63;
   --state-warn: #c98a00;
   --state-bad: #d0393e;
@@ -32,6 +34,7 @@
     --text: #e3e9ef;
     --text-muted: #93a1af;
     --accent: #5aa9ff;
+    --on-accent: #06121f;
     --state-ok: #3ccf91;
     --state-warn: #f0b429;
     --state-bad: #ff6b6b;
@@ -200,7 +203,7 @@ body {
 .button-primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .button-primary:hover {
@@ -447,7 +450,7 @@ body {
 
 .speed-btn[aria-pressed='true'] {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 /* ── Activity log ────────────────────────────────────────────────────────────────────────── */
@@ -467,6 +470,7 @@ body {
 }
 
 .log td {
+  overflow-wrap: anywhere;
   padding: 6px 12px 6px 0;
   border-bottom: 1px solid var(--border);
   vertical-align: top;
@@ -494,6 +498,384 @@ body {
   background: var(--state-warn);
 }
 
+/* ── Resources (temporary list in the canvas area until step 7) ─────────────────────────── */
+
+.canvas-list {
+  min-width: 0;
+  place-self: stretch;
+  align-self: start;
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+}
+
+.canvas-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.resources {
+  display: grid;
+  gap: 14px;
+}
+
+.rg {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px;
+}
+
+.rg > .res {
+  border-bottom: 1px solid var(--border);
+  border-radius: 6px 6px 0 0;
+}
+
+.rg-empty {
+  padding: 8px 10px;
+}
+
+.rg-items,
+.children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.children {
+  margin-left: 22px;
+  border-left: 1px solid var(--border);
+}
+
+.res {
+  font: inherit;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(130px, 11rem) minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 12px;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.res:hover {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.res[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.res-type {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.res-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.res-detail {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Inspector and create forms ───────────────────────────────────────────────────────────── */
+
+.inspector,
+.create {
+  display: grid;
+  gap: 12px;
+}
+
+.inspector-type {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.inspector-name {
+  margin: -8px 0 0;
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+
+.facts {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.facts > div {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 38%) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.facts dt {
+  color: var(--text-muted);
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.resource-id {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.resource-id code {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.inspector-actions,
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kind-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.kind {
+  font: inherit;
+  width: 100%;
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.kind:hover {
+  border-color: var(--accent);
+}
+
+.kind-label {
+  font-weight: 600;
+}
+
+.kind-blurb {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.create-back {
+  margin: 0;
+  min-height: 1em;
+}
+
+.link-button {
+  font: inherit;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.link-button.danger {
+  color: var(--state-bad);
+}
+
+.field {
+  display: grid;
+  gap: 4px;
+}
+
+.field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.field-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.input {
+  font: inherit;
+  font-size: 0.92rem;
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.input[readonly],
+.input:disabled {
+  color: var(--text-muted);
+}
+
+:where(.input, .kind, .res, .link-button):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Review + create: the moment the game teaches. Passed is quiet; a refusal says whose rule it is. */
+.review {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.review-passed,
+.refusal {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  font-size: 0.9rem;
+}
+
+.review-passed {
+  border-left-color: var(--state-ok);
+  display: grid;
+  gap: 8px;
+}
+
+.review-passed-title,
+.refusal-title {
+  margin: 0;
+  font-weight: 650;
+}
+
+.refusal {
+  display: grid;
+  gap: 6px;
+}
+
+.refusal p {
+  margin: 0;
+}
+
+.refusal-rule {
+  border-left-color: var(--state-bad);
+}
+
+.refusal-unmodelled {
+  border-left-color: var(--state-warn);
+}
+
+.refusal-invalid {
+  border-left-color: var(--text-muted);
+}
+
+.refusal-source {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.refusal-source a {
+  color: var(--accent);
+}
+
+.rules {
+  display: grid;
+  gap: 4px;
+}
+
+.rules-title {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+}
+
+.rule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.85rem;
+}
+
+.rule-item {
+  display: grid;
+  grid-template-columns: 3.4rem minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.rule-main {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.rule-name {
+  justify-self: start;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.rule-desc {
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.rule-default .rule-name,
+.rule-default .rule-priority {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.rule-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.access-allow {
+  color: var(--state-ok);
+  font-weight: 600;
+}
+
+.access-deny {
+  color: var(--state-bad);
+  font-weight: 600;
+}
+
 /* ── Narrow screens: one column, canvas first after the ticket ──────────────────────────── */
 
 @media (max-width: 900px) {
@@ -513,6 +895,20 @@ body {
 
   .topbar {
     padding: 10px 16px;
+  }
+
+  .res {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .res-detail {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .canvas-toolbar {
+    justify-content: flex-start;
   }
 
   .pane {

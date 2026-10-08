@@ -2,6 +2,9 @@ import { useContext, useEffect } from 'react'
 import { browserScheduler, startTickLoop } from '../store/tickLoop.ts'
 import { browserStorage, writeSave } from '../store/persistence.ts'
 import { ActivityLogPanel } from './ActivityLogPanel.tsx'
+import { CreatePanel } from './CreatePanel.tsx'
+import { Inspector } from './Inspector.tsx'
+import { ResourceList } from './ResourceList.tsx'
 import { GameStoreContext, useGame } from './gameContext.ts'
 import { TimeControls } from './TimeControls.tsx'
 
@@ -32,7 +35,7 @@ export function Workspace() {
       <header className="topbar">
         <div className="topbar-title">
           <span className="brand">Cloud Engineer Simulator</span>
-          <span className="topbar-context">Sandbox, no client assigned yet</span>
+          <span className="topbar-context">Sandbox subscription, no client assigned yet</span>
         </div>
         <TimeControls />
       </header>
@@ -46,16 +49,10 @@ export function Workspace() {
 
       <main className="pane pane-canvas" aria-labelledby="canvas-title">
         <h2 id="canvas-title" className="visually-hidden">Architecture</h2>
-        <div className="canvas-empty">
-          <p className="canvas-empty-title">Nothing deployed yet</p>
-          <p className="empty">Everything you build appears here, inside its resource group and network, coloured by its health.</p>
-        </div>
+        <CanvasBody />
       </main>
 
-      <aside className="pane pane-inspector" aria-labelledby="inspector-title">
-        <h2 id="inspector-title" className="pane-title">Inspector</h2>
-        <InspectorBody />
-      </aside>
+      <InspectorPane />
 
       <section className="pane pane-bottom" aria-label="Tools">
         <ActivityLogPanel />
@@ -64,10 +61,50 @@ export function Workspace() {
   )
 }
 
+function CanvasBody() {
+  const startCreate = useGame(s => s.startCreate)
+  const hasGroups = useGame(s => Object.keys(s.world.tenant.resourceGroups).length > 0)
+  const create = (
+    <button type="button" className="button button-primary" onClick={() => startCreate({ kind: hasGroups ? null : 'resourceGroup' })}>
+      {hasGroups ? 'Create a resource' : 'Create a resource group'}
+    </button>
+  )
+  if (!hasGroups) {
+    return (
+      <div className="canvas-empty">
+        <p className="canvas-empty-title">Nothing deployed yet</p>
+        <p className="empty">Everything you build appears here, inside its resource group and network. Start with a resource group to hold it.</p>
+        {create}
+      </div>
+    )
+  }
+  return (
+    <div className="canvas-list">
+      <div className="canvas-toolbar">{create}</div>
+      <ResourceList />
+    </div>
+  )
+}
+
+/** Remounts when what it shows changes, so each resource or form opens scrolled to the top. */
+function InspectorPane() {
+  const key = useGame(s => s.session.ui.creating ? `create:${JSON.stringify(s.session.ui.creating)}` : `select:${s.session.ui.selectedId ?? ''}`)
+  return (
+    <aside key={key} className="pane pane-inspector" aria-label="Inspector">
+      <InspectorBody />
+    </aside>
+  )
+}
+
 function InspectorBody() {
   const selected = useGame(s => s.session.ui.selectedId)
-  if (selected === null) {
-    return <p className="empty">Select a resource to see its settings, its health and what depends on it.</p>
-  }
-  return <p className="mono">{selected}</p>
+  const creating = useGame(s => s.session.ui.creating)
+  if (creating) return <CreatePanel request={creating} />
+  if (selected !== null) return <Inspector id={selected} />
+  return (
+    <>
+      <h2 className="pane-title">Inspector</h2>
+      <p className="empty">Select a resource to see its settings and what it's connected to.</p>
+    </>
+  )
 }

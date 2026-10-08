@@ -9,6 +9,7 @@ import { addSubscription, writeResourceGroup } from './resourceGroups.ts'
 import { writeSubnet, writeVirtualNetwork } from './virtualNetworks.ts'
 
 export * from './armId.ts'
+export * from './cidr.ts'
 export { REGIONS, regionDisplayName, getResource, getResourceGroup, resourcesOfType, childResources } from './common.ts'
 export * from './resourceGroups.ts'
 export * from './virtualNetworks.ts'
