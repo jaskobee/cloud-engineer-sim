@@ -23,6 +23,8 @@ npm run dev      # http://localhost:5173/cloud-engineer-sim/
 npm run check    # typecheck, lint, test, build
 ```
 
-Project docs live in [`Docs/`](Docs/): vision (`PROJECT_INTRO.md`), development rules
-(`INSTRUCTIONS.md`), mission authoring (`MISSION_AUTHORING_GUIDE.md`), architecture and build
-plan (`BOOTSTRAP_REPORT.md`) and decisions (`DECISIONS.md`).
+Project docs live in [`Docs/`](Docs/): vision ([`PROJECT_INTRO.md`](Docs/PROJECT_INTRO.md)), the MVP
+product & technical design ([`MVP_DESIGN.md`](Docs/MVP_DESIGN.md)), development rules
+([`INSTRUCTIONS.md`](Docs/INSTRUCTIONS.md)), mission authoring
+([`MISSION_AUTHORING_GUIDE.md`](Docs/MISSION_AUTHORING_GUIDE.md)), architecture and build plan
+([`BOOTSTRAP_REPORT.md`](Docs/BOOTSTRAP_REPORT.md)) and decisions ([`DECISIONS.md`](Docs/DECISIONS.md)).

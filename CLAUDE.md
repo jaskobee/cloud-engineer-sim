@@ -4,8 +4,9 @@ A browser-based **Azure cloud-engineering simulation and learning game**. The pl
 build, run, break and fix a client's Azure infrastructure. It is **not** a diagramming tool.
 Static site on GitHub Pages: no backend, no real Azure, no credentials.
 
-Read first: `Docs/PROJECT_INTRO.md`, `Docs/INSTRUCTIONS.md`, `Docs/MISSION_AUTHORING_GUIDE.md`,
-`Docs/BOOTSTRAP_REPORT.md` (architecture, first mission, build order), `Docs/DECISIONS.md`.
+Read first: `Docs/PROJECT_INTRO.md`, `Docs/MVP_DESIGN.md` (the MVP product & technical design),
+`Docs/INSTRUCTIONS.md`, `Docs/MISSION_AUTHORING_GUIDE.md`, `Docs/BOOTSTRAP_REPORT.md` (architecture,
+first mission, build order; refines the MVP design where they differ), `Docs/DECISIONS.md`.
 
 ## Hard rules
 
