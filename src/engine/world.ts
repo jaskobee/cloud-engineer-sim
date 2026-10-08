@@ -50,6 +50,8 @@ export interface Resource {
   name: string
   location: string
   tags: Record<string, string>
+  /** Top-level ARM `sku`, for the types that have one (e.g. public IP addresses, PIP-6). */
+  sku?: { name: string; tier?: string }
   /** ARM-named configuration. */
   properties: Record<string, unknown>
   /** The exact set of values is pinned by ARM-1u before the deployment engine (step 6). */

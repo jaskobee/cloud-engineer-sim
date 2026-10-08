@@ -1,6 +1,7 @@
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import {
   advance,
+  azure,
   createRegistry,
   createWorld,
   dispatch as dispatchCommand,
@@ -50,7 +51,7 @@ export function newWorld(seed: string): World {
   return createWorld({ seed, epochMs: SANDBOX_EPOCH_MS })
 }
 
-export function createGameStore({ world, registry = createRegistry([]) }: { world: World; registry?: Registry }): GameStore {
+export function createGameStore({ world, registry = createRegistry(azure.AZURE_COMMANDS) }: { world: World; registry?: Registry }): GameStore {
   return createStore<GameState>()((set, get) => ({
     world,
     session: { missionId: null, mode: 'guided', ui: { bottomTab: 'activity-log', selectedId: null } },

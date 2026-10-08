@@ -42,7 +42,7 @@ Vite 8 · React 19 · TypeScript 6.0 (strict; pinned below 6.1 because typescrip
 
 ```
 src/engine/   headless simulation core (world, clock, operations, deployments, flow engine, telemetry)
-src/engine/azure/  one module per Azure resource type (schema, validation, runtime, INFO)   [from step 4]
+src/engine/azure/  Azure resource types: ARM IDs, CIDR maths, names, command handlers     [step 4]
 src/missions/ mission engine + mission data                                              [from step 9]
 src/store/    Zustand store + tick loop                                                   [from step 3]
 src/ui/       React workspace, canvas, inspector, panels
@@ -57,6 +57,17 @@ Docs/         vision, rules, facts register, decisions
 `saveWorld` / `loadWorld`. Handlers return refusals with a `ruleId` from `AZURE_FACTS.md` and never write
 the Activity Log: `dispatch` records `Started` + `Succeeded`/`Failed` for every write (MON-8).
 `tests/facts.test.ts` fails if `src/` cites a rule ID that isn't in the register.
+
+## Azure control plane (step 4)
+
+`src/engine/azure/` (exported as `azure` from the engine): one module per resource family, each a set of command
+handlers registered in `AZURE_COMMANDS` (the store's default registry). Commands: `scenario/addSubscription`
+(setup, not logged), `arm/resourceGroups/write`, `arm/virtualNetworks/write`, `arm/subnets/write`,
+`arm/networkSecurityGroups/write`, `arm/securityRules/write` + `/delete`, `arm/publicIPAddresses/write`,
+`arm/networkInterfaces/write`. Resources are keyed by the lower-cased ARM ID (ARM-2s); look them up with
+`azure.getResource`. Subnets and security rules are child resources (SUB-9s, NSG-13s). Activity log
+`operationName` = `{type}/write|delete` (ARM-3s). Every refusal cites a rule; cases Learn doesn't cover are
+`not-modelled`, never guessed. `tests/engine/azure/fixtures.ts` builds the standard test worlds.
 
 ## Store and UI (step 3)
 

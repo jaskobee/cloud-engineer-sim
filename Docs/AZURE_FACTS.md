@@ -33,6 +33,20 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | L-VMMETRICS | Supported metrics for Microsoft.Compute/virtualMachines — https://learn.microsoft.com/en-us/azure/azure-monitor/reference/supported-metrics/microsoft-compute-virtualmachines-metrics |
 | L-ACTLOG | Azure Monitor activity log — https://learn.microsoft.com/en-us/azure/azure-monitor/platform/activity-log |
 | L-ACTSCHEMA | Azure activity log event schema — https://learn.microsoft.com/en-us/azure/azure-monitor/platform/activity-log-schema |
+| L-PLAN | Plan Azure virtual networks — https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-vnet-plan-design-arm |
+| L-PRIVIP | Private IP addresses — https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/private-ip-addresses |
+| L-NICADDR | Configure IP addresses for a network interface — https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/virtual-network-network-interface-addresses |
+| L-RGPORTAL | Manage resource groups (portal) — https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal |
+| L-RGREST | Resource Groups - Create Or Update (REST) — https://learn.microsoft.com/en-us/rest/api/resources/resource-groups/create-or-update |
+| L-RID | Resource functions for ARM templates (`resourceId`) — https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions-resource |
+| L-RBACDEF | Understand Azure role definitions (action string format) — https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions |
+| L-REGIONS | List of Azure regions — https://learn.microsoft.com/en-us/azure/reliability/regions-list |
+| L-NSGREST | Network Security Groups - Get (REST, `ProvisioningState` definition) — https://learn.microsoft.com/en-us/rest/api/virtualnetwork/network-security-groups/get |
+| L-TPL-RULE | Template reference `Microsoft.Network/networkSecurityGroups/securityRules` (API 2025-09-01) — https://learn.microsoft.com/en-us/azure/templates/microsoft.network/networksecuritygroups/securityrules |
+| L-TPL-VNET | Template reference `Microsoft.Network/virtualNetworks` (API 2025-09-01) — https://learn.microsoft.com/en-us/azure/templates/microsoft.network/virtualnetworks |
+| L-TPL-NIC | Template reference `Microsoft.Network/networkInterfaces` (API 2025-09-01) — https://learn.microsoft.com/en-us/azure/templates/microsoft.network/networkinterfaces |
+| L-TPL-PIP | Template reference `Microsoft.Network/publicIPAddresses` — https://learn.microsoft.com/en-us/azure/templates/microsoft.network/publicipaddresses |
+| L-MOVE | Move Azure resources to a new resource group or subscription — https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription |
 | L-ACA-NSG | Container Apps: securing a virtual network with NSGs (future) — https://learn.microsoft.com/en-us/azure/container-apps/firewall-integration |
 
 ---
@@ -48,6 +62,10 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | VNET-4 | You can add, remove and modify the CIDR blocks a virtual network uses | L-VNETFAQ | VERIFIED |
 | VNET-4u | What happens when removing an address block that subnets still use: not stated on the FAQ | L-VNETFAQ | UNCERTAIN, refuse as not modelled |
 | VNET-5 | Name: scope resource group, 2–64 chars, alphanumerics, underscores, periods, hyphens. Starts with an alphanumeric, ends with an alphanumeric or underscore | L-NAMES | VERIFIED |
+| VNET-6 | "You can create a resource only in a virtual network that exists in the same region and subscription as the resource." Connecting VNets across subscriptions/regions is possible (peering, not modelled) | L-PLAN | VERIFIED |
+| VNET-7 | ARM property names: `properties.addressSpace.addressPrefixes` ("A list of address blocks reserved for this virtual network in CIDR notation"), `properties.subnets`. Subnet: `addressPrefix`, `addressPrefixes`, `defaultOutboundAccess`, `networkSecurityGroup` | L-TPL-VNET | VERIFIED (names from the resource format) |
+| VNET-8u | A VNet or subnet prefix that isn't on its network boundary (e.g. `10.0.1.5/24`), and overlapping blocks inside one VNet's address space | — | UNCERTAIN, refused as not modelled |
+| VNET-9u | Changing an existing virtual network (address space, tags) | — | UNCERTAIN (VNET-4/VNET-4u), not modelled yet |
 
 ## SUB — Subnets
 
@@ -61,6 +79,8 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | SUB-6 | Name: scope virtual network, 1–80 chars, same character rules as VNET-5 | L-NAMES | VERIFIED |
 | SUB-7 | For API versions released after 2026-03-31, new virtual networks default to private subnets (`defaultOutboundAccess` = false). The portal already defaults to private subnets | L-OUTBOUND | VERIFIED |
 | SUB-7s | Sim: every subnet is private. A VM reaches the internet outbound only through an explicit method. In the slice that's a Standard public IP on its NIC (PIP-4) | — | SIM |
+| SUB-8 | Each subnet has a unique address range in CIDR format within the VNet address space and can't overlap other subnets (restates SUB-3/SUB-4) | L-PLAN | VERIFIED |
+| SUB-9s | Sim: subnets are child resources (`Microsoft.Network/virtualNetworks/subnets`) with their own ID and activity log entries. The VNet's `subnets` list is derived from them, never stored twice | — | SIM |
 
 ## NSG — Network security groups
 
@@ -68,9 +88,12 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 |---|---|---|---|
 | NSG-1 | Rule priority is 100–4096. Lower numbers are processed first. Once traffic matches a rule, processing stops | L-NSG | VERIFIED |
 | NSG-2 | Priority must be "unique for all security rules within the NSG" | L-NSGMAN | VERIFIED (wording) |
-| NSG-2u | Whether uniqueness is per direction (inbound vs outbound) or across the whole NSG: the manage page says "within the NSG" and doesn't mention direction | L-NSGMAN | UNCERTAIN, resolve before implementing |
+| NSG-2u | Whether uniqueness is per direction (inbound vs outbound) or across the whole NSG: the manage page says "within the NSG", the template reference says "unique for each rule in the collection". Neither mentions direction | L-NSGMAN, L-TPL-RULE | UNCERTAIN |
+| NSG-2s | Sim: a second rule with the same priority **and the same direction** is refused (NSG-2). Same priority in the opposite direction is refused as not modelled (NSG-2u) | — | SIM |
 | NSG-3 | Default inbound rules: AllowVNetInBound 65000, AllowAzureLoadBalancerInBound 65001, DenyAllInbound 65500. Default outbound rules: AllowVnetOutBound 65000, AllowInternetOutBound 65001, DenyAllOutBound 65500. Defaults have the lowest priority so custom rules always run first | L-NSG | VERIFIED (names as spelled on the overview page) |
 | NSG-3u | Exact casing of default rule names as returned by the API/portal (the overview page mixes "VNet"/"Vnet", "Inbound"/"InBound") | L-NSG, L-ESR | UNCERTAIN, display the overview spelling until confirmed |
+| NSG-3a | Default rule columns (priority · source · source ports · destination · destination ports · protocol · access). Inbound: AllowVNetInBound 65000 · VirtualNetwork · 0-65535 · VirtualNetwork · 0-65535 · Any · Allow; AllowAzureLoadBalancerInBound 65001 · AzureLoadBalancer · 0-65535 · 0.0.0.0/0 · 0-65535 · Any · Allow; DenyAllInbound 65500 · 0.0.0.0/0 · 0-65535 · 0.0.0.0/0 · 0-65535 · Any · Deny. Outbound: AllowVnetOutBound 65000 · VirtualNetwork · 0-65535 · VirtualNetwork · 0-65535 · Any · Allow; AllowInternetOutBound 65001 · 0.0.0.0/0 · 0-65535 · Internet · 0-65535 · Any · Allow; DenyAllOutBound 65500 · 0.0.0.0/0 · 0-65535 · 0.0.0.0/0 · 0-65535 · Any · Deny | L-NSG | VERIFIED |
+| NSG-3s | Sim: default rules store protocol as `*` (the ARM value for any protocol, NSG-11) and the UI shows it as "Any" | — | SIM |
 | NSG-4 | Rules are evaluated on the five-tuple (source, source port, destination, destination port, protocol). NSGs are **stateful**: a flow record is kept, return traffic doesn't need its own rule. Removing a rule that allowed a connection doesn't interrupt existing connections. **Rule changes only affect new connections** | L-NSG | VERIFIED |
 | NSG-5 | `VirtualNetwork`, `AzureLoadBalancer` and `Internet` in source/destination are service tags | L-NSG | VERIFIED |
 | NSG-6 | Rule settings: Source = Any / IP Addresses / My IP address / Service Tag / Application security group. Ports = single (`80`), range (`1024-65535`), comma list (`80, 1024-65535`) or `*`. Protocol = Any / TCP / UDP / ICMP. Action = Allow / Deny. Name unique within the NSG, ≤ 80 chars, starts with a letter or number, ends with a letter, number or underscore, only letters/numbers/underscores/periods/hyphens. Description ≤ 140 chars | L-NSGMAN | VERIFIED (ASGs not modelled in slice) |
@@ -78,7 +101,11 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | NSG-8 | A VM with a Standard public IP is secure by default: for internet traffic to flow in, an NSG must be associated with its subnet or NIC and allow it | L-NSGHOW, L-PIP | VERIFIED |
 | NSG-8u | Traffic *between VMs in the same VNet* when neither subnet nor NIC has an NSG: the how-it-works page says "All network traffic is blocked through a subnet and network interface if they don't have a network security group associated", but its outbound example says traffic "flows freely" from a VM with no NSG. Learn is ambiguous | L-NSGHOW | UNCERTAIN. Slice missions always associate NSGs. Unassociated intra-VNet flows are reported as not modelled |
 | NSG-9 | NSG name: scope resource group, 1–80 chars, same rules as VNET-5. Security rule name: scope NSG, 1–80 chars | L-NAMES | VERIFIED |
-| NSG-10 | Region/subscription constraints on associating an NSG to a subnet or NIC, and NSG/rule count limits: not on the manage page. Limits live on the subscription limits page (not yet extracted) | L-NSGMAN | UNCERTAIN, not modelled |
+| NSG-10 | Region/subscription constraints on associating an NSG to a subnet or NIC, and NSG/rule count limits: not on the manage page or L-PLAN. Limits live on the subscription limits page (not yet extracted) | L-NSGMAN, L-PLAN | UNCERTAIN. Sim refuses associations across regions or subscriptions as not modelled |
+| NSG-11 | Security rule properties: `access` Allow/Deny; `direction` Inbound/Outbound; `protocol` `*`, `Ah`, `Esp`, `Icmp`, `Tcp`, `Udp`; `priority` int 100–4096; `sourcePortRange`/`destinationPortRange` "Integer or range between 0 and 65535" or `*`; `sourceAddressPrefix`/`destinationAddressPrefix` "CIDR or … IP range", `*`, or the default tags `VirtualNetwork`, `AzureLoadBalancer`, `Internet`; plural `…Prefixes`/`…PortRanges` lists; `description` ≤ 140 chars | L-TPL-RULE | VERIFIED |
+| NSG-11s | Sim: single prefix/port fields only. Plural lists, other service tags, application security groups and address ranges written as `a-b` are refused as not modelled | — | SIM |
+| NSG-12 | Zero or one NSG per subnet; the same or a different NSG per subnet; an NSG can be associated to a NIC, to the subnet the NIC is in, or both. Associating to subnets is recommended over individual NICs | L-PLAN | VERIFIED |
+| NSG-13s | Sim: security rules are child resources (`Microsoft.Network/networkSecurityGroups/securityRules`), created or updated with a PUT-style write and removed with a delete. Default rules (NSG-3) are created with the NSG and are read-only | — | SIM |
 
 ## PIP — Public IP addresses
 
@@ -90,6 +117,11 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | PIP-3 | Name: scope resource group, 1–80 chars, same rules as VNET-5 | L-NAMES | VERIFIED |
 | PIP-4 | Associating a Standard public IP to a VM's NIC is an explicit outbound method (NAT gateway is the recommended method for most scenarios) | L-OUTBOUND | VERIFIED |
 | PIP-5u | Allocation method for Standard SKU (static only?). The VM network overview says "By default, public IP addresses are dynamic", which looks outdated for Standard | L-VMNET | UNCERTAIN, sim shows Standard as static and labels it until confirmed |
+| PIP-6 | Template values: `sku.name` Basic / Standard / StandardV2; `sku.tier` Global / Regional; `publicIPAllocationMethod` Dynamic / Static; `publicIPAddressVersion` IPv4 / IPv6; `dnsSettings.domainNameLabel` + the regional DNS zone form the FQDN; `ipAddress` is the assigned address | L-TPL-PIP | VERIFIED |
+| PIP-6s | Sim: Standard, Regional, Static, IPv4 only. Basic is refused (PIP-2). Other values are refused as not modelled | — | SIM |
+| PIP-7s | Sim: assigned public addresses come from 198.51.100.0/24 (a documentation-only range, RFC 5737) and are labelled as made up | — | SIM |
+| PIP-8 | "You may assign a public IP address to an IP configuration, but aren't required to." A Standard public IP on a NIC needs an NSG that explicitly allows the traffic | L-NICADDR | VERIFIED |
+| PIP-9u | Associating one public IP to more than one IP configuration, or across regions/subscriptions | L-NICADDR | UNCERTAIN, refused as not modelled |
 
 ## NIC — Network interfaces
 
@@ -101,6 +133,12 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | NIC-4 | By default the portal assigns a dynamic private IP to a NIC when creating a VM | L-VMNET | VERIFIED |
 | NIC-5 | The VM network overview says the portal creates an NSG named `<vm>-nsg` associated to the NIC, with one inbound rule (priority 1000, RDP, TCP 3389, Allow). The Linux quickstart instead shows "Public inbound ports → Allow selected ports → SSH (22), HTTP (80)" | L-VMNET, L-VMQS | UNCERTAIN: the NIC NSG's existence is stated, but its default rule set differs between pages (Windows-oriented text). Confirm the current VM-wizard networking options before modelling the wizard |
 | NIC-6 | Name: scope resource group, 1–80 chars, same rules as VNET-5 | L-NAMES | VERIFIED |
+| NIC-7 | ARM property names: `properties.networkSecurityGroup`, `properties.ipConfigurations[]` with `primary`, `privateIPAddress`, `privateIPAddressVersion`, `privateIPAllocationMethod`, `publicIPAddress`, `subnet` | L-TPL-NIC | VERIFIED (names from the resource format) |
+| NIC-8s | Sim: one IPv4 IP configuration per NIC, named `ipconfig1` by the sim. Changing an existing NIC's subnet or private address isn't modelled yet. Its NSG and public IP can be changed | — | SIM |
+| PRIV-1 | Dynamic is the default allocation method. Azure assigns "the next available unassigned or unreserved IP address in the subnet's address range … normally the next sequentially available address, there's no guarantee" | L-PRIVIP | VERIFIED |
+| PRIV-1s | Sim: dynamic allocation takes the lowest free, unreserved address | — | SIM |
+| PRIV-2 | Static allocation: "select and assign any unassigned or unreserved IP address in the subnet's address range." The 5 reserved addresses can't be assigned (SUB-2) | L-PRIVIP | VERIFIED |
+| PRIV-3 | A dynamic address is released when the NIC is deleted, moved to another subnet in the same VNet, or changed to static with a different address | L-PRIVIP | VERIFIED |
 
 ## VM — Virtual machines
 
@@ -135,7 +173,7 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | MON-5u | Application Insights resources must be workspace-based (backed by a Log Analytics workspace) | — | UNCERTAIN, find and cite the Learn page before modelling the dependency |
 | MON-6 | VM platform metrics (REST name = display name): `Percentage CPU` (Percent, Average), `Network In Total` (Bytes, Total), `Network Out Total` (Bytes, Total), `Available Memory Bytes` (Bytes, Average), `Available Memory Percentage` (Percent, Average), `VmAvailabilityMetric` (Count) | L-VMMETRICS | VERIFIED |
 | MON-7 | The activity log records control-plane (management) operations: create, update, delete and actions, e.g. creating a VM. It doesn't typically capture reads. Events are kept 90 days. Subscription scope is the default. Portal filters include Operation, Event initiated by, Event category (e.g. Administrative) | L-ACTLOG | VERIFIED |
-| MON-7u | Exact `operationName` for NSG *security rule* writes (expected `Microsoft.Network/networkSecurityGroups/securityRules/write`, but the schema page's sample only shows the NSG write) | L-ACTSCHEMA | UNCERTAIN, confirm before step 4 models rule writes |
+| MON-7u | Exact `operationName` for NSG *security rule* writes. Resolved 2026-10-08 by ARM-3s: composed from the documented format, not seen verbatim in an activity log sample | L-ACTSCHEMA | RESOLVED → ARM-3s |
 | MON-8 | Administrative category: "If the operation type is Write, Delete, or Action, the records of both the start and success or fail of that operation are recorded" | L-ACTSCHEMA | VERIFIED |
 | MON-9 | Event fields (Administrative): `caller` (email address, UPN claim or SPN claim of who performed the operation), `category` (always `Administrative`), `correlationId` (usually a GUID; events sharing it belong to the same "uber action"), `operationId` (GUID shared among the events of a single operation), `eventDataId` (unique per event), `operationName` (e.g. `Microsoft.Network/networkSecurityGroups/write`), `resourceId`, `resourceGroupName`, `resourceProviderName`, `resourceType`, `status`, `subStatus` (usually the HTTP status code), `eventTimestamp`, `submissionTimestamp`, `subscriptionId`, `level`. The schema "isn't strictly enforced across all data sources" | L-ACTSCHEMA | VERIFIED |
 | MON-10 | Common `status` values: Started, In Progress, Succeeded, Failed, Active, Resolved | L-ACTSCHEMA | VERIFIED |
@@ -153,12 +191,27 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | NAME-3 | Application Insights component: scope resource group, 1–260 chars, can't use `%&\?/` or control characters, can't end with a space or period | L-NAMES | VERIFIED |
 | NAME-4 | Metric alert: scope resource group, 1–260 chars, can't use `*#&+:<>?@%{}\/\|` or control characters, can't end with a space or period | L-NAMES | VERIFIED |
 | NAME-5u | Availability test (`webtests`) naming rule | L-NAMES | UNCERTAIN, not found in the extracted part of the page |
+| NAME-6 | "Resource and resource group names are case-insensitive unless specifically noted … Always perform a case-insensitive comparison of names." | L-NAMES | VERIFIED |
+| NAME-7 | "The name must be unique within a scope, which might vary for each resource type." Example: a virtual network name must be unique within a resource group | L-PLAN | VERIFIED |
+| NAME-7s | Sim: the uniqueness scope is the **Scope** column of L-NAMES (resource group for VNets, NSGs, NICs and public IPs; subscription for resource groups; the parent resource for subnets and security rules). L-NAMES doesn't define the column itself; L-PLAN confirms the VNet case | — | SIM |
+| NAME-8 | Resource group name (REST): 1–90 chars, pattern `^[-\w\._\(\)]+$`, "alphanumeric, underscore, parentheses, hyphen, period (except at end), and Unicode characters that match the allowed characters" | L-RGREST | VERIFIED |
 
 ## ARM — Resource Manager behaviour
 
 | ID | Rule | Source | Status |
 |---|---|---|---|
-| ARM-1u | The set of `provisioningState` values the sim shows (Creating, Updating, Deleting, Succeeded, Failed …) | — | UNCERTAIN, find and cite before step 6 (deployment engine) |
+| ARM-1u | The set of `provisioningState` values. Resolved 2026-10-08 for Microsoft.Network by ARM-1 | — | RESOLVED → ARM-1 |
+| ARM-1 | Microsoft.Network `ProvisioningState` values: Failed, Succeeded, Canceled, Creating, Updating, Deleting. Sample responses show `Succeeded` | L-NSGREST | VERIFIED |
+| ARM-1s | Sim: until the deployment engine (step 6), accepted writes are `Succeeded` immediately. Other providers' state sets (Compute, Insights) are checked when those types arrive | — | SIM |
+| ARM-2 | Resource ID formats. Resource group: `/subscriptions/{subscriptionId}/resourceGroups/{name}` (REST sample). Resource: `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}`. Child resources append `/{childType}/{childName}` after the parent's name (`Microsoft.Compute/virtualMachines/myVM/extensions/myExt`) | L-RID, L-RGREST | VERIFIED |
+| ARM-2s | Sim: the world keys resources by the lower-cased ID (NAME-6) and keeps the original casing in `id` | — | SIM |
+| ARM-3 | RBAC action strings have the format `{Company}.{ProviderName}/{resourceType}/{action}`. `write` = PUT or PATCH, `delete` = DELETE, `action` = POST | L-RBACDEF | VERIFIED |
+| ARM-3s | Sim: a write's activity log `operationName` is `{resourceType}/write` (or `/delete`), e.g. `Microsoft.Network/networkSecurityGroups/securityRules/write`. This matches the schema sample `Microsoft.Network/networkSecurityGroups/write` (MON-9) | — | SIM |
+| RG-1 | A resource group's location is where its metadata is stored. "Resources inside a resource group can be in different regions." | L-RGPORTAL | VERIFIED |
+| RG-2u | Updating an existing resource group (e.g. a different location in a second PUT) | — | UNCERTAIN, not modelled |
+| RG-3 | The action for writing a resource group is `Microsoft.Resources/subscriptions/resourceGroups/write` (required at the destination of a move). Sim: it's the resource group write's activity log `operationName` (ARM-3s) | L-MOVE | VERIFIED |
+| ARM-4u | A second PUT that changes an existing NSG's or public IP's top-level settings (location, tags, SKU) | — | UNCERTAIN, not modelled yet |
+| REG-1 | Regions offered by the sim: West Europe `westeurope` (Netherlands), North Europe `northeurope` (Ireland), Germany West Central `germanywestcentral` (Frankfurt). Each has 3 availability zones | L-REGIONS | VERIFIED (other regions not modelled) |
 
 ## FUTURE — Facts kept for later missions
 
@@ -174,3 +227,4 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 |---|---|
 | 2026-10-08 | Register created for the PixelForge VM slice |
 | 2026-10-08 | Added L-ACTSCHEMA and MON-8 to MON-13s (activity log events) for the engine core (step 2). Narrowed MON-7u |
+| 2026-10-08 | Step 4 research: added L-PLAN, L-PRIVIP, L-NICADDR, L-RGPORTAL, L-RGREST, L-RID, L-RBACDEF, L-REGIONS, L-NSGREST and template references. New VNET-6..9u, SUB-8, SUB-9s, NSG-2s, NSG-11..13s, PIP-6..9u, NIC-7, NIC-8s, PRIV-1..3, NAME-6..8, ARM-1..3s, RG-1, RG-2u, REG-1. Resolved ARM-1u and MON-7u. NSG-2u narrowed (still open) |
