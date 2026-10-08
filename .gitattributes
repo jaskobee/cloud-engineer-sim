@@ -1,0 +1,5 @@
+# Normalise line endings in the repo so Windows and Linux (CI) agree.
+* text=auto eol=lf
+*.svg text eol=lf
+*.png binary
+*.woff2 binary

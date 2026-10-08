@@ -1,0 +1,175 @@
+/*
+ * Design tokens. Colour carries meaning: neutral surfaces, saturated colour only for state
+ * (green = healthy, amber = attention or deploying, red = failed) and one blue for what you can act on.
+ */
+:root {
+  color-scheme: light dark;
+
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --border: #d8dee5;
+  --text: #17212b;
+  --text-muted: #5b6875;
+  --accent: #0b6bcb;
+  --state-ok: #1f9d63;
+  --state-warn: #c98a00;
+  --state-bad: #d0393e;
+
+  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1720;
+    --surface: #16212c;
+    --border: #273544;
+    --text: #e3e9ef;
+    --text-muted: #93a1af;
+    --accent: #5aa9ff;
+    --state-ok: #3ccf91;
+    --state-warn: #f0b429;
+    --state-bad: #ff6b6b;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+.shell {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100%;
+}
+
+.shell-header,
+.shell-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.shell-footer {
+  border-top: 1px solid var(--border);
+  border-bottom: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.brand {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.tag {
+  padding: 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.shell-main {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 56px 24px;
+  display: grid;
+  align-content: start;
+  gap: 32px;
+}
+
+.intro h1 {
+  margin: 0 0 12px;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.intro p {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.ticket {
+  padding: 20px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.ticket h2 {
+  margin: 8px 0;
+  font-size: 1.25rem;
+}
+
+.ticket p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.ticket-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ticket-label {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.led {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.led-amber {
+  background: var(--state-warn);
+}
+
+@media (max-width: 480px) {
+  .shell-header,
+  .shell-footer {
+    padding: 12px 16px;
+  }
+
+  .shell-main {
+    padding: 32px 16px;
+  }
+}
