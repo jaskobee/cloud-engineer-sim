@@ -1,10 +1,31 @@
-import { WORLD_SCHEMA_VERSION } from '../engine/index.ts'
+import { useState } from 'react'
+import { WORLD_SCHEMA_VERSION, type LoadResult } from '../engine/index.ts'
+import { createGameStore, newWorld, type GameStore } from '../store/gameStore.ts'
+import { browserStorage, readSave } from '../store/persistence.ts'
+import { formatSimTime } from './format.ts'
+import { GameStoreContext } from './gameContext.ts'
+import { Workspace } from './Workspace.tsx'
 
-/**
- * Placeholder shell (step 1). The real workspace (quest panel, architecture canvas,
- * inspector, bottom panels) replaces this from step 3 onwards.
- */
+function newSeed(): string {
+  return typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : String(Date.now())
+}
+
 export function App() {
+  const [store, setStore] = useState<GameStore | null>(null)
+  const [saved] = useState<LoadResult | null>(() => readSave(browserStorage()))
+
+  if (store) {
+    return (
+      <GameStoreContext.Provider value={store}>
+        <Workspace />
+      </GameStoreContext.Provider>
+    )
+  }
+
+  const start = () => setStore(createGameStore({ world: newWorld(newSeed()) }))
+  const resume = saved?.ok ? () => setStore(createGameStore({ world: saved.world })) : null
+  const savedAt = saved?.ok ? formatSimTime(saved.world.clock.epochMs, saved.world.clock.now) : null
+
   return (
     <div className="shell">
       <header className="shell-header">
@@ -20,6 +41,23 @@ export function App() {
             keep it running, and fix it when it breaks.
           </p>
         </section>
+
+        <div className="start-actions">
+          <button type="button" className="button button-primary" onClick={start}>
+            {resume ? 'Start a new game' : 'Start the game'}
+          </button>
+          {resume && savedAt && (
+            <button type="button" className="button" onClick={resume}>
+              Continue from {savedAt.day} {savedAt.time.slice(0, 5)}
+            </button>
+          )}
+        </div>
+        {resume && <p className="hint">Starting a new game replaces your saved game at the next autosave.</p>}
+        {saved && !saved.ok && (
+          <p className="notice" role="status">
+            Your saved game couldn't be loaded ({saved.message}) Start a new game to replace it.
+          </p>
+        )}
 
         <section className="ticket" aria-label="First client">
           <div className="ticket-row">

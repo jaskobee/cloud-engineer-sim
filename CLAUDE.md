@@ -58,6 +58,14 @@ Docs/         vision, rules, facts register, decisions
 the Activity Log: `dispatch` records `Started` + `Succeeded`/`Failed` for every write (MON-8).
 `tests/facts.test.ts` fails if `src/` cites a rule ID that isn't in the register.
 
+## Store and UI (step 3)
+
+`src/store/gameStore.ts`: Zustand (vanilla) store `{ world, session, lastRefusal }`. The UI changes the world
+only through `store.dispatch(command)` (caller defaults to the player) and time through `tick(realMs)`.
+`tickLoop.ts` drives it from animation frames (fake scheduler in tests), `persistence.ts` is the guarded
+localStorage save slot (T-6). Components read with `useGame(selector)` and select the smallest value they need.
+The bottom panel lists only tools that work.
+
 ## Working discipline
 
 - Small, reviewable steps (see `Docs/BOOTSTRAP_REPORT.md` §I). Finish each with `npm run check`.

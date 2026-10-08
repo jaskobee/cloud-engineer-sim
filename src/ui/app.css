@@ -18,6 +18,10 @@
   --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Menlo, Consolas, monospace;
   --radius: 10px;
+
+  /* The sim clock is a console readout: dark in both themes. */
+  --console-bg: #17212b;
+  --console-fg: #eef3f7;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -31,6 +35,8 @@
     --state-ok: #3ccf91;
     --state-warn: #f0b429;
     --state-bad: #ff6b6b;
+    --console-bg: #070c11;
+    --console-fg: #e3e9ef;
   }
 }
 
@@ -171,5 +177,345 @@ body {
 
   .shell-main {
     padding: 32px 16px;
+  }
+}
+
+/* ── Shared controls ─────────────────────────────────────────────────────────────────────── */
+
+.button {
+  font: inherit;
+  font-weight: 550;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.button:hover {
+  border-color: var(--accent);
+}
+
+.button-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.button-primary:hover {
+  filter: brightness(1.08);
+}
+
+:where(button, [role='tab']):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.start-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hint,
+.notice {
+  margin: -16px 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.notice {
+  color: var(--state-bad);
+}
+
+.empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  max-width: 48ch;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Workspace layout (bootstrap report §H) ──────────────────────────────────────────────── */
+
+.workspace {
+  display: grid;
+  height: 100%;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(240px, 320px);
+  grid-template-rows: auto minmax(0, 1fr) minmax(160px, 28vh);
+  grid-template-areas:
+    'top top top'
+    'quest canvas inspector'
+    'bottom bottom bottom';
+}
+
+.topbar {
+  grid-area: top;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding: 10px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+}
+
+.topbar-context {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.pane {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 18px;
+  background: var(--surface);
+}
+
+.pane-quest {
+  grid-area: quest;
+  border-right: 1px solid var(--border);
+}
+
+.pane-inspector {
+  grid-area: inspector;
+  border-left: 1px solid var(--border);
+}
+
+.pane-title {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+/* The canvas is the visual centre: a quiet dot grid says "this is a surface you build on". */
+.pane-canvas {
+  grid-area: canvas;
+  position: relative;
+  display: grid;
+  place-items: center;
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--border) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.canvas-empty {
+  text-align: center;
+  padding: 24px;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.canvas-empty-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.pane.pane-bottom {
+  grid-area: bottom;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 9px 12px 8px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.tab[aria-selected='true'] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.tab-panel {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 18px;
+}
+
+/* ── Sim clock: the one loud element. A console readout with a state light. ──────────────── */
+
+.time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.clock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: var(--console-bg);
+  color: var(--console-fg);
+  border: 1px solid var(--border);
+}
+
+.clock-led {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.is-running .clock-led {
+  background: var(--state-ok);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--state-ok) 30%, transparent);
+}
+
+.is-paused .clock-led {
+  background: var(--state-warn);
+}
+
+.clock-day {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.clock-time {
+  font-family: var(--font-mono);
+  font-size: 1.35rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.is-paused .clock-time {
+  opacity: 0.6;
+}
+
+.speed {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.speed-btn {
+  font: inherit;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  min-width: 48px;
+  padding: 7px 12px;
+  border: none;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.speed-btn:first-child {
+  border-left: none;
+  min-width: 82px;
+}
+
+.speed-btn[aria-pressed='true'] {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── Activity log ────────────────────────────────────────────────────────────────────────── */
+
+.log {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.log th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 4px 12px 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.log td {
+  padding: 6px 12px 6px 0;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.status::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.status-succeeded::before {
+  background: var(--state-ok);
+}
+
+.status-failed::before {
+  background: var(--state-bad);
+}
+
+.status-started::before {
+  background: var(--state-warn);
+}
+
+/* ── Narrow screens: one column, canvas first after the ticket ──────────────────────────── */
+
+@media (max-width: 900px) {
+  .workspace {
+    height: auto;
+    min-height: 100%;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(50vh, auto) auto minmax(200px, auto);
+    grid-template-areas: 'top' 'quest' 'canvas' 'inspector' 'bottom';
+  }
+
+  .pane-quest,
+  .pane-inspector {
+    border: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .topbar {
+    padding: 10px 16px;
+  }
+
+  .pane {
+    padding: 14px 16px;
   }
 }
