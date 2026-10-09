@@ -28,7 +28,7 @@ export const SANDBOX_SUBSCRIPTION = { subscriptionId: '5a4d0b0c-0000-4000-8000-5
 
 export type AssistanceMode = 'guided' | 'standard' | 'expert'
 /** Bottom panel tabs. Only tools that work are listed; more arrive with their steps. */
-export type BottomTab = 'activity-log' | 'ip-flow-verify' | 'effective-rules'
+export type BottomTab = 'activity-log' | 'deployments' | 'ip-flow-verify' | 'effective-rules'
 
 /**
  * The "Create a resource" panel. `kind` null shows the type picker. `preset` pre-fills the form, e.g. to

@@ -100,6 +100,18 @@ else is not modelled (NSG-8u). Built on it: `ipFlowVerify` (NW-1/2/6s) and `effe
 shown as bottom-panel tabs (`NetworkWatcher.tsx`, `BottomTools.tsx`). Stateful flow records (NSG-4: rule changes
 only affect new connections) belong to the traffic system (step 8), not to the evaluator.
 
+## Deployment engine (step 6)
+
+`src/engine/deployments.ts` + `dispatch`: a write whose handler has `durationMs` (set from `azure.PROVISIONING_MS`,
+made-up game-paced times, ARM-13s) runs as a one-operation deployment (ARM-12s). Its resources show `Creating` /
+`Updating` / `Deleting` (ARM-1s, ARM-5) and the activity log gets only `Started`; `deploymentSystem` completes it at
+the first tick boundary after `endsAt`, sets `Succeeded` and logs `Succeeded` with the same IDs (MON-10s). Resource
+group writes stay synchronous (ARM-6). Writing to, or referencing, a resource that's still in progress is refused as
+not modelled (ARM-11u) in both `dispatch` and `dryRun`. VMs: power state `creating` → `running` (`vmPowerSystem`,
+VM-19s). Security rules apply once their write succeeds (ARM-14s). History: newest 800 per resource group (ARM-10).
+Tests: `ok()` in `tests/engine/azure/fixtures.ts` waits for the deployment (`settle`); `start()` doesn't.
+UI: Deployments tab (`DeploymentsPanel.tsx`), `Creating…` badges in the resource list, Create switches to Deployments.
+
 ## Working discipline
 
 - Small, reviewable steps (see `Docs/BOOTSTRAP_REPORT.md` §I). Finish each with `npm run check`.

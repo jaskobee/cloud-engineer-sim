@@ -1,4 +1,6 @@
 import { activityLogRetention } from './activityLog.ts'
+import { vmPowerSystem } from './azure/virtualMachines.ts'
+import { deploymentSystem } from './deployments.ts'
 import type { World } from './world.ts'
 
 /** Fixed simulation tick. Systems always see whole ticks, however the caller slices time. */
@@ -17,7 +19,7 @@ export type System = (world: World, tick: Tick) => World
  * deployments → runtime → traffic → availability probes → metrics → alerts → mission triggers.
  * Each arrives with its step; housekeeping runs last.
  */
-export const SYSTEMS: readonly System[] = [activityLogRetention]
+export const SYSTEMS: readonly System[] = [deploymentSystem, vmPowerSystem, activityLogRetention]
 
 /**
  * Advance sim time by `dt` sim milliseconds. Systems run once for every tick boundary crossed,

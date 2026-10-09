@@ -1,3 +1,4 @@
+import type { System } from '../clock.ts'
 import type { CommandHandler, Refusal } from '../commands.ts'
 import type { ArmId, Resource, World } from '../world.ts'
 import { armKey, parseArmId, resourceId, sameName } from './armId.ts'
@@ -154,8 +155,30 @@ export const writeVirtualMachine: CommandHandler<VirtualMachineWrite> = {
         networkProfile: { networkInterfaces: [{ id: payload.networkInterfaceId, properties: { primary: true } }] },
       },
     }))
-    return { ...w, runtime: { ...w.runtime, [armKey(id)]: { health: 'unknown', reasons: [], powerState: 'running' } } }
+    // Power state follows provisioning: creating now, running once the create succeeds (VM-19s).
+    return { ...w, runtime: { ...w.runtime, [armKey(id)]: { health: 'unknown', reasons: [], powerState: 'creating' } } }
   },
 }
 
 export const powerStateOf = (world: World, vm: ArmId) => world.runtime[armKey(vm)]?.powerState ?? null
+
+/**
+ * Runtime system: a VM's power state follows its provisioning (VM-7, VM-19s). `creating` while the
+ * create runs, `running` once it has succeeded. Leaves every other state alone.
+ */
+export const vmPowerSystem: System = world => {
+  let runtime = world.runtime
+  for (const vm of Object.values(world.tenant.resources)) {
+    if (vm.type.toLowerCase() !== VM_TYPE.toLowerCase()) continue
+    const key = armKey(vm.id)
+    const current = runtime[key]
+    const next = vm.provisioningState === 'Creating' ? 'creating'
+      : vm.provisioningState === 'Succeeded' && (current?.powerState === undefined || current.powerState === 'creating') ? 'running'
+      : current?.powerState
+    if (next !== current?.powerState) {
+      if (runtime === world.runtime) runtime = { ...runtime }
+      runtime[key] = { health: current?.health ?? 'unknown', reasons: current?.reasons ?? [], ...(next ? { powerState: next } : {}) }
+    }
+  }
+  return runtime === world.runtime ? world : { ...world, runtime }
+}

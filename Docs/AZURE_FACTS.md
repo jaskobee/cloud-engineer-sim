@@ -56,6 +56,12 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | L-SSHKEY | `SshPublicKey` (Azure SDK for JavaScript reference) — https://learn.microsoft.com/en-us/javascript/api/@azure/arm-compute/sshpublickey |
 | L-ACA-NSG | Container Apps: securing a virtual network with NSGs (future) — https://learn.microsoft.com/en-us/azure/container-apps/firewall-integration |
 | L-SVCTAGS | Virtual network service tags — https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview |
+| L-ASYNC | Track asynchronous Azure operations — https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/async-operations |
+| L-DEPEND | Define the order for deploying resources in ARM templates — https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/resource-dependency |
+| L-DEPGET | Deployments - Get (REST, `ProvisioningState` and `DeploymentPropertiesExtended`) — https://learn.microsoft.com/en-us/rest/api/resources/deployments/get |
+| L-DEPHIST | View deployment history with Azure Resource Manager — https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-history |
+| L-VMREST | Virtual Machines - Create Or Update (REST) — https://learn.microsoft.com/en-us/rest/api/compute/virtual-machines/create-or-update |
+| L-NSGPUT | Network Security Groups - Create Or Update (REST) — https://learn.microsoft.com/en-us/rest/api/virtualnetwork/network-security-groups/create-or-update |
 
 ---
 
@@ -178,6 +184,7 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | VM-16s | Sim: a VM is created with one existing NIC as its primary NIC, SSH key authentication only (VM-3s; the key pair is simulated, never a real key), and is Running as soon as the write succeeds (ARM-1s, VM-7) | — | SIM |
 | VM-17u | Creating a VM with a NIC that's already attached to another VM | — | UNCERTAIN, refused as not modelled |
 | VM-18 | SSH public key: `path` is "the full path on the created VM where ssh public key is stored … Example: /home/user/.ssh/authorized_keys". `keyData` is the public key ("at least 2048-bit and in ssh-rsa format") | L-SSHKEY | VERIFIED |
+| VM-19s | Sim: a VM's power state is `creating` while its provisioning state is Creating and becomes `running` when the create succeeds (VM-7). The Starting phase in between isn't modelled | — | SIM |
 
 ## NW — Network Watcher diagnostics
 
@@ -207,7 +214,7 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | MON-8 | Administrative category: "If the operation type is Write, Delete, or Action, the records of both the start and success or fail of that operation are recorded" | L-ACTSCHEMA | VERIFIED |
 | MON-9 | Event fields (Administrative): `caller` (email address, UPN claim or SPN claim of who performed the operation), `category` (always `Administrative`), `correlationId` (usually a GUID; events sharing it belong to the same "uber action"), `operationId` (GUID shared among the events of a single operation), `eventDataId` (unique per event), `operationName` (e.g. `Microsoft.Network/networkSecurityGroups/write`), `resourceId`, `resourceGroupName`, `resourceProviderName`, `resourceType`, `status`, `subStatus` (usually the HTTP status code), `eventTimestamp`, `submissionTimestamp`, `subscriptionId`, `level`. The schema "isn't strictly enforced across all data sources" | L-ACTSCHEMA | VERIFIED |
 | MON-10 | Common `status` values: Started, In Progress, Succeeded, Failed, Active, Resolved | L-ACTSCHEMA | VERIFIED |
-| MON-10s | Sim: every write records a `Started` event and then a `Succeeded` or `Failed` event with the same `operationId` and `correlationId`. A write the control plane refuses is `Started` + `Failed`. Until the deployment engine (step 6), accepted writes complete at the same sim instant | — | SIM |
+| MON-10s | Sim: every write records a `Started` event when it's requested and a `Succeeded` or `Failed` event with the same `operationId` and `correlationId` when it finishes. A write the control plane refuses is `Started` + `Failed` at once. Since the deployment engine (step 6), an accepted write's `Succeeded` event is recorded when its operation completes in sim time (ARM-12s), except resource group writes, which complete at once (ARM-6) | — | SIM |
 | MON-11u | Whether portal "Review + create" validation (a dry run) appears in the activity log | — | UNCERTAIN. Sim doesn't log dry runs |
 | MON-12u | `level` and `subStatus` values for failed or refused writes (the sample event only shows `Informational`) | L-ACTSCHEMA | UNCERTAIN. Sim doesn't model `level` or `subStatus` yet |
 | MON-13s | Sim: activity log entries older than 90 sim days are dropped (MON-7 retention) | — | SIM |
@@ -232,7 +239,7 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 |---|---|---|---|
 | ARM-1u | The set of `provisioningState` values. Resolved 2026-10-08 for Microsoft.Network by ARM-1 | — | RESOLVED → ARM-1 |
 | ARM-1 | Microsoft.Network `ProvisioningState` values: Failed, Succeeded, Canceled, Creating, Updating, Deleting. Sample responses show `Succeeded` | L-NSGREST | VERIFIED |
-| ARM-1s | Sim: until the deployment engine (step 6), accepted writes are `Succeeded` immediately. Compute's provisioning states are VM-8; Insights' are checked when those types arrive | — | SIM |
+| ARM-1s | Sim: the in-progress states used are `Creating` (new resource), `Updating` (existing resource) and `Deleting`, all ARM-1 values. Operations end `Succeeded` (or `Failed`, reserved for faults). Compute's provisioning states are VM-8; Insights' are checked when those types arrive | — | SIM |
 | ARM-2 | Resource ID formats. Resource group: `/subscriptions/{subscriptionId}/resourceGroups/{name}` (REST sample). Resource: `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}`. Child resources append `/{childType}/{childName}` after the parent's name (`Microsoft.Compute/virtualMachines/myVM/extensions/myExt`) | L-RID, L-RGREST | VERIFIED |
 | ARM-2s | Sim: the world keys resources by the lower-cased ID (NAME-6) and keeps the original casing in `id` | — | SIM |
 | ARM-3 | RBAC action strings have the format `{Company}.{ProviderName}/{resourceType}/{action}`. `write` = PUT or PATCH, `delete` = DELETE, `action` = POST | L-RBACDEF | VERIFIED |
@@ -241,6 +248,16 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | RG-2u | Updating an existing resource group (e.g. a different location in a second PUT) | — | UNCERTAIN, not modelled |
 | RG-3 | The action for writing a resource group is `Microsoft.Resources/subscriptions/resourceGroups/write` (required at the destination of a move). Sim: it's the resource group write's activity log `operationName` (ARM-3s) | L-MOVE | VERIFIED |
 | ARM-4u | A second PUT that changes an existing NSG's, public IP's or VM's settings (location, tags, SKU, size) | — | UNCERTAIN, not modelled yet |
+| ARM-5 | An asynchronous operation initially returns HTTP 201 (Created) or 202 (Accepted) and a `provisioningState` showing it isn't finished. The value "can vary by operation" but excludes Succeeded, Failed and Canceled, the three values that mean the operation finished (e.g. Accepted while the request is received and running) | L-ASYNC | VERIFIED |
+| ARM-6 | Resource Groups - Create Or Update returns 200 or 201 (no 202) and isn't documented as asynchronous. Sample responses show `provisioningState` Succeeded | L-RGREST | VERIFIED |
+| ARM-7 | Network security groups and virtual machines: Create Or Update returns 201 for a create, with polling headers (`Azure-AsyncOperation` + `Retry-After` for NSGs, `Location` + `Retry-After` for VMs). VM sample responses show `provisioningState` Creating | L-NSGPUT, L-VMREST | VERIFIED |
+| ARM-8 | "Azure Resource Manager evaluates the dependencies between resources, and deploys them in their dependent order. When resources aren't dependent on each other, Resource Manager deploys them in parallel." | L-DEPEND | VERIFIED |
+| ARM-9 | Deployment `provisioningState` values: NotSpecified, Accepted, Running, Ready, Creating, Created, Deleting, Deleted, Canceled, Failed, Succeeded, Updating. Deployment properties include `correlationId`, `timestamp`, `duration`, `outputResources`, `provisioningState`, `error` | L-DEPGET | VERIFIED |
+| ARM-10 | Each deployment has a correlation ID "used to track related events". A deployment can include multiple operations, and failed operations carry the error message. Portal: resource group → **Deployments**. "The deployment history for a resource group is limited to 800 deployments. As you near the limit, deployments are automatically deleted from the history." | L-DEPHIST | VERIFIED |
+| ARM-11u | Writing to a resource whose operation hasn't finished, or creating a resource that references one that is still Creating/Updating/Deleting. Learn doesn't document the result | — | UNCERTAIN, refused as not modelled ("wait for its deployment to finish") |
+| ARM-12s | Sim: every accepted write except resource groups (ARM-6) and scenario setup runs as its own one-operation deployment. It's named `<resource name>-<YYYYMMDDHHmmss>` (made up: Learn doesn't document portal deployment names), is `Running` until its operation completes, then `Succeeded` (ARM-9 values; `Failed` reserved for faults). The affected resources show ARM-1s states meanwhile. History keeps the newest 800 deployments per resource group (ARM-10) | — | SIM |
+| ARM-13s | Sim: provisioning durations are made up and game-paced, because Learn doesn't publish them (real times vary): resource group immediate; VNet 8 s; subnet, NSG, security rule (write or delete) 4–5 s; public IP and NIC 6 s; Linux VM with its OS disk 90 s. Shown as made up in-game | — | SIM |
+| ARM-14s | Sim: a security rule takes part in flow evaluation once its write has succeeded and until its delete has. A rule that's still Creating doesn't apply yet. An update in progress already uses its new settings (simplification) | — | SIM |
 | REG-1 | Regions offered by the sim: West Europe `westeurope` (Netherlands), North Europe `northeurope` (Ireland), Germany West Central `germanywestcentral` (Frankfurt). Each has 3 availability zones | L-REGIONS | VERIFIED (other regions not modelled) |
 
 ## FUTURE — Facts kept for later missions
@@ -260,3 +277,4 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | 2026-10-08 | Step 4 research: added L-PLAN, L-PRIVIP, L-NICADDR, L-RGPORTAL, L-RGREST, L-RID, L-RBACDEF, L-REGIONS, L-NSGREST and template references. New VNET-6..9u, SUB-8, SUB-9s, NSG-2s, NSG-11..13s, PIP-6..9u, NIC-7, NIC-8s, PRIV-1..3, NAME-6..8, ARM-1..3s, RG-1, RG-2u, REG-1. Resolved ARM-1u and MON-7u. NSG-2u narrowed (still open) |
 | 2026-10-09 | Step 4c research (VMs): L-VMSTATES, L-FINDIMG, L-DISKS, L-DISKSKU, L-BSV2, L-TPL-VM. New VM-1s, VM-7..VM-17u. ARM-4u widened to VMs |
 | 2026-10-10 | Step 5 (flow engine): added L-SVCTAGS, NSG-14, NSG-15, NSG-15s, NW-5u, NW-6s, NW-7s |
+| 2026-10-10 | Step 6 (deployment engine): L-ASYNC, L-DEPEND, L-DEPGET, L-DEPHIST, L-VMREST, L-NSGPUT; ARM-5..ARM-14s, VM-19s; MON-10s and ARM-1s updated |

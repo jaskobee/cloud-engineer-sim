@@ -1,16 +1,18 @@
 import type { KeyboardEvent } from 'react'
 import type { BottomTab } from '../store/gameStore.ts'
 import { ActivityLogPanel } from './ActivityLogPanel.tsx'
+import { DeploymentsPanel } from './DeploymentsPanel.tsx'
 import { useGame } from './gameContext.ts'
 import { EffectiveRulesPanel, IpFlowVerifyPanel } from './NetworkWatcher.tsx'
 
 const TABS: { id: BottomTab; label: string }[] = [
   { id: 'activity-log', label: 'Activity log' },
+  { id: 'deployments', label: 'Deployments' },
   { id: 'ip-flow-verify', label: 'IP flow verify' },
   { id: 'effective-rules', label: 'Effective security rules' },
 ]
 
-/** The tools under the architecture: logs and Network Watcher diagnostics. Only tools that work are listed. */
+/** The tools under the architecture: logs, deployments and Network Watcher diagnostics. Only tools that work are listed. */
 export function BottomTools() {
   const tab = useGame(s => s.session.ui.bottomTab)
   const selectTab = useGame(s => s.selectTab)
@@ -38,6 +40,7 @@ export function BottomTools() {
       </div>
       <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className="tab-panel">
         {tab === 'activity-log' && <ActivityLogPanel />}
+        {tab === 'deployments' && <DeploymentsPanel />}
         {tab === 'ip-flow-verify' && <IpFlowVerifyPanel />}
         {tab === 'effective-rules' && <EffectiveRulesPanel />}
       </div>

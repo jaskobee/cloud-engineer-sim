@@ -18,8 +18,12 @@ export * from './networkSecurityGroups.ts'
 export * from './networkInterfaces.ts'
 export * from './virtualMachines.ts'
 export * from './flow.ts'
+import { withProvisioning } from './provisioning.ts'
 
-export const AZURE_COMMANDS: readonly CommandHandler[] = [
+export * from './provisioning.ts'
+
+/** Every Azure command, with its provisioning duration (ARM-12s, ARM-13s). */
+export const AZURE_COMMANDS: readonly CommandHandler[] = ([
   addSubscription as CommandHandler,
   writeResourceGroup as CommandHandler,
   writeVirtualNetwork as CommandHandler,
@@ -30,4 +34,4 @@ export const AZURE_COMMANDS: readonly CommandHandler[] = [
   writePublicIpAddress as CommandHandler,
   writeNetworkInterface as CommandHandler,
   writeVirtualMachine as CommandHandler,
-]
+] as CommandHandler[]).map(withProvisioning)

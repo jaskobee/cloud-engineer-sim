@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatSimTime } from '../../src/ui/format.ts'
+import { formatDuration, formatSimTime } from '../../src/ui/format.ts'
 
 describe('formatSimTime', () => {
   // 2026-10-16 06:00 UTC = Friday 08:00 in Berlin (CEST)
@@ -12,5 +12,15 @@ describe('formatSimTime', () => {
 
   it('rolls over to the next day', () => {
     expect(formatSimTime(epoch, 16 * 60 * 60_000 + 1_000, 'Europe/Berlin').day).toBe('Sat')
+  })
+})
+
+describe('formatDuration', () => {
+  it('shows seconds, then minutes and seconds', () => {
+    expect(formatDuration(0)).toBe('0 s')
+    expect(formatDuration(8_400)).toBe('8 s')
+    expect(formatDuration(60_000)).toBe('1 min')
+    expect(formatDuration(90_000)).toBe('1 min 30 s')
+    expect(formatDuration(-5)).toBe('0 s')
   })
 })

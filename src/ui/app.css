@@ -903,6 +903,42 @@ body {
   font-weight: 600;
 }
 
+/* ── Deployments and in-progress resources ──────────────────────────────────────────────── */
+
+.deployments {
+  display: grid;
+  gap: 8px;
+  max-width: 1320px;
+}
+
+.deployments .hint {
+  margin: 0;
+}
+
+.deployment-type {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.status-running::before {
+  background: var(--state-warn);
+}
+
+.res-state {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--state-warn);
+  color: var(--text);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.res-state-deleting {
+  border-color: var(--state-bad);
+}
+
 /* ── Network Watcher: IP flow verify and effective security rules ───────────────────────── */
 
 .nw {

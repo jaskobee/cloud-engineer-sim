@@ -92,7 +92,12 @@ function Row(props: { resource: Resource | null; id: ArmId; selected: boolean; o
   return (
     <button type="button" className="res" aria-pressed={props.selected} onClick={() => props.onSelect(props.id)}>
       <span className="res-type">{props.label ?? (resource ? typeLabel(resource.type) : '')}</span>
-      <span className="res-name">{props.name ?? resource?.name}</span>
+      <span className="res-name">
+        {props.name ?? resource?.name}
+        {resource && resource.provisioningState !== 'Succeeded' && (
+          <span className={`res-state res-state-${resource.provisioningState.toLowerCase()}`}>{resource.provisioningState}…</span>
+        )}
+      </span>
       <span className="res-detail mono">{props.detail ?? (resource ? detailOf(resource) : '')}</span>
     </button>
   )

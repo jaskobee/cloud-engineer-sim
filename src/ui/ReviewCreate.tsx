@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import type { ArmId, Refusal } from '../engine/index.ts'
 import type { PlayerCommand } from '../store/gameStore.ts'
-import { useGame } from './gameContext.ts'
+import { GameStoreContext, useGame } from './gameContext.ts'
 import { RefusalNotice } from './RefusalNotice.tsx'
 
 interface Props {
@@ -24,6 +24,8 @@ export function ReviewCreate({ command, summary, targetId, verb = 'Create' }: Pr
   const dispatch = useGame(s => s.dispatch)
   const select = useGame(s => s.select)
   const startCreate = useGame(s => s.startCreate)
+  const selectTab = useGame(s => s.selectTab)
+  const store = useContext(GameStoreContext)
   const key = JSON.stringify(command)
   const [review, setReview] = useState<{ key: string; refusal: Refusal | null } | null>(null)
   const current = review?.key === key ? review : null
@@ -37,8 +39,13 @@ export function ReviewCreate({ command, summary, targetId, verb = 'Create' }: Pr
   const runReview = () => setReview({ key, refusal: check(command) })
   const create = () => {
     const outcome = dispatch(command)
-    if (outcome.status === 'refused') setReview({ key, refusal: outcome.refusal })
-    else if (targetId) select(targetId)
+    if (outcome.status === 'refused') {
+      setReview({ key, refusal: outcome.refusal })
+      return
+    }
+    // A write that runs as a deployment (ARM-12s): show it progressing, as the portal does.
+    if (outcome.operationId && store?.getState().world.deployments[outcome.operationId]) selectTab('deployments')
+    if (targetId) select(targetId)
     else startCreate(null)
   }
 

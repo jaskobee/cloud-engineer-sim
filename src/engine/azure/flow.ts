@@ -121,9 +121,14 @@ interface Candidate {
   rule: SecurityRuleProperties
 }
 
-/** Custom rules and default rules of one NSG, in processing order (NSG-1, NSG-3). */
+/**
+ * Custom rules and default rules of one NSG, in processing order (NSG-1, NSG-3). A custom rule that's
+ * still Creating isn't in effect yet (ARM-14s).
+ */
 function rulesInOrder(world: World, nsg: Resource, direction: Direction): Candidate[] {
-  const custom = securityRulesOf(world, nsg.id).map(r => ({ name: r.name, id: r.id as ArmId | null, rule: ruleProperties(r) }))
+  const custom = securityRulesOf(world, nsg.id)
+    .filter(r => r.provisioningState !== 'Creating')
+    .map(r => ({ name: r.name, id: r.id as ArmId | null, rule: ruleProperties(r) }))
   const defaults = ((nsg.properties.defaultSecurityRules as typeof DEFAULT_SECURITY_RULES | undefined) ?? DEFAULT_SECURITY_RULES)
     .map(d => ({ name: d.name, id: null, rule: d as SecurityRuleProperties }))
   return [...custom, ...defaults].filter(c => c.rule.direction === direction).sort((a, b) => a.rule.priority - b.rule.priority)

@@ -1,4 +1,5 @@
 import type { ActivityLogEntry } from './activityLog.ts'
+import type { Deployment } from './deployments.ts'
 import { createRingBuffer, type RingBuffer } from './ringBuffer.ts'
 import { seedRng, type RngState } from './rng.ts'
 
@@ -54,7 +55,7 @@ export interface Resource {
   sku?: { name: string; tier?: string }
   /** ARM-named configuration. */
   properties: Record<string, unknown>
-  /** The exact set of values is pinned by ARM-1u before the deployment engine (step 6). */
+  /** ARM-1 values: `Succeeded`, or `Creating` / `Updating` / `Deleting` while a deployment runs (ARM-1s). */
   provisioningState: string
   createdBy: string
   changedAt: number
@@ -66,13 +67,6 @@ export interface Tenant {
   resources: Record<ArmId, Resource>
 }
 
-/** A deployment: operations that progress over sim time. Fleshed out by the deployment engine (step 6). */
-export interface Deployment {
-  id: string
-  correlationId: string
-  startedAt: number
-  completedAt?: number
-}
 
 // ── ACTUAL: recomputed from desired state by the runtime and flow engine ─────────────────────────
 

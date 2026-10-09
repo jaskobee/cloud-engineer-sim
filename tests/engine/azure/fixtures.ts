@@ -1,5 +1,5 @@
 import { expect } from 'vitest'
-import { azure, createRegistry, createWorld, dispatch, dryRun, type Refusal, type World } from '../../../src/engine/index.ts'
+import { azure, createRegistry, createWorld, dispatch, dryRun, step, TICK_MS, type Refusal, type World } from '../../../src/engine/index.ts'
 
 export const SUB = '6b1c2a9e-0d3f-4c5a-9e7b-2f4d6a8c0e11'
 export const PLAYER = 'engineer@pixelforge.example'
@@ -15,11 +15,25 @@ export const SNET_GAME = `${VNET}/subnets/snet-game`
 export const SNET_DATA = `${VNET}/subnets/snet-data`
 export const NSG_GAME = id(azure.NSG_TYPE, 'nsg-snet-game')
 
-/** Dispatch and expect acceptance. Returns the new world. */
-export function ok(world: World, type: string, payload: unknown, caller = PLAYER): World {
+/** Advance sim time until every running deployment has completed (ARM-12s). */
+export function settle(world: World): World {
+  const running = Object.values(world.deployments).filter(d => d.provisioningState === 'Running')
+  if (running.length === 0) return world
+  const last = Math.max(...running.map(d => d.endsAt))
+  // Completion is seen at the first tick boundary at or after endsAt.
+  return step(world, Math.ceil(last / TICK_MS) * TICK_MS - world.clock.now)
+}
+
+/** Dispatch without waiting: the write's deployment is still running afterwards. */
+export function start(world: World, type: string, payload: unknown, caller = PLAYER): World {
   const { world: next, outcome } = dispatch(world, registry, { type, caller, payload })
   if (outcome.status !== 'accepted') throw new Error(`${type} refused: ${JSON.stringify(outcome.refusal)}`)
   return next
+}
+
+/** Dispatch, expect acceptance, and wait for the deployment to finish, as a player would. */
+export function ok(world: World, type: string, payload: unknown, caller = PLAYER): World {
+  return settle(start(world, type, payload, caller))
 }
 
 /** Dispatch and expect a refusal. Also checks that nothing but the activity log changed. */
