@@ -28,9 +28,8 @@ export const SANDBOX_SUBSCRIPTION = { subscriptionId: '5a4d0b0c-0000-4000-8000-5
 
 export type AssistanceMode = 'guided' | 'standard' | 'expert'
 /** Bottom panel tabs. Only tools that work are listed; more arrive with their steps. */
-export type BottomTab = 'activity-log'
+export type BottomTab = 'activity-log' | 'ip-flow-verify' | 'effective-rules'
 
-/** Everything that isn't the simulated world: what the player is looking at and how much help they get. */
 /**
  * The "Create a resource" panel. `kind` null shows the type picker. `preset` pre-fills the form, e.g. to
  * edit an existing subnet (a write with the same name updates it) or add a rule to a chosen NSG.
@@ -40,6 +39,7 @@ export interface CreateRequest {
   preset?: Record<string, string>
 }
 
+/** Everything that isn't the simulated world: what the player is looking at and how much help they get. */
 export interface Session {
   missionId: string | null
   mode: AssistanceMode

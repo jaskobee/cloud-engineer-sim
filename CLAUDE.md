@@ -88,6 +88,18 @@ rule, or a case the simulator doesn't model; it shows the rule ID and its Learn 
 `ResourceList.tsx` is a temporary list in the canvas area until the canvas (step 7). New worlds include the
 made-up sandbox subscription (`SANDBOX_SUBSCRIPTION`).
 
+## Network flow engine (step 5)
+
+`src/engine/azure/flow.ts`: `evaluateFlow(world, NicFlow)` is **the** answer to "is this connection allowed?"
+(rule 5). The canvas, probes, traffic and mission checks call it; never re-derive reachability elsewhere. Inbound
+goes through the subnet NSG and then the NIC NSG, outbound through the NIC and then the subnet (NSG-7). Rules run
+by priority, first match wins, defaults last (NSG-1, NSG-3), and match the VM's *private* IP (NSG-14). Service tags
+follow NSG-15/15s: 168.63.129.16 is in `VirtualNetwork` too, so `AllowVNetInBound` (65000) decides health probes
+before `AllowAzureLoadBalancerInBound`. With no NSG at all, internet inbound is denied (NSG-8, NW-7s) and anything
+else is not modelled (NSG-8u). Built on it: `ipFlowVerify` (NW-1/2/6s) and `effectiveSecurityRules` (NW-4, VM-5),
+shown as bottom-panel tabs (`NetworkWatcher.tsx`, `BottomTools.tsx`). Stateful flow records (NSG-4: rule changes
+only affect new connections) belong to the traffic system (step 8), not to the evaluator.
+
 ## Working discipline
 
 - Small, reviewable steps (see `Docs/BOOTSTRAP_REPORT.md` §I). Finish each with `npm run check`.

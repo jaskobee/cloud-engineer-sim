@@ -1,7 +1,7 @@
 import { useContext, useEffect } from 'react'
 import { browserScheduler, startTickLoop } from '../store/tickLoop.ts'
 import { browserStorage, writeSave } from '../store/persistence.ts'
-import { ActivityLogPanel } from './ActivityLogPanel.tsx'
+import { BottomTools } from './BottomTools.tsx'
 import { CreatePanel } from './CreatePanel.tsx'
 import { Inspector } from './Inspector.tsx'
 import { ResourceList } from './ResourceList.tsx'
@@ -55,7 +55,7 @@ export function Workspace() {
       <InspectorPane />
 
       <section className="pane pane-bottom" aria-label="Tools">
-        <ActivityLogPanel />
+        <BottomTools />
       </section>
     </div>
   )

@@ -903,6 +903,97 @@ body {
   font-weight: 600;
 }
 
+/* ── Network Watcher: IP flow verify and effective security rules ───────────────────────── */
+
+.nw {
+  display: grid;
+  gap: 14px;
+  max-width: 1320px;
+}
+
+.nw-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 10px 14px;
+  align-items: end;
+}
+
+.nw-submit {
+  display: flex;
+  align-items: end;
+}
+
+.nw-result {
+  display: grid;
+  gap: 8px;
+  max-width: 640px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--text-muted);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.nw-allowed {
+  border-left-color: var(--state-ok);
+}
+
+.nw-denied {
+  border-left-color: var(--state-bad);
+}
+
+.nw-access {
+  margin: 0;
+  font-weight: 650;
+  font-size: 1.05rem;
+}
+
+.nw-allowed .nw-access {
+  color: var(--state-ok);
+}
+
+.nw-denied .nw-access {
+  color: var(--state-bad);
+}
+
+.nw-path {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.nw-pick {
+  max-width: 320px;
+}
+
+.nw-nsg {
+  display: grid;
+  gap: 6px;
+}
+
+.nw-assoc {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.table-scroll .log {
+  min-width: 760px;
+}
+
+.table-scroll .log td {
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
+tr.rule-default td {
+  color: var(--text-muted);
+}
+
 /* ── Narrow screens: one column, canvas first after the ticket ──────────────────────────── */
 
 @media (max-width: 900px) {

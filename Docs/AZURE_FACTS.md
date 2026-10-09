@@ -55,6 +55,7 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | L-TPL-VM | Template reference `Microsoft.Compute/virtualMachines` (API 2026-03-01) — https://learn.microsoft.com/en-us/azure/templates/microsoft.compute/virtualmachines |
 | L-SSHKEY | `SshPublicKey` (Azure SDK for JavaScript reference) — https://learn.microsoft.com/en-us/javascript/api/@azure/arm-compute/sshpublickey |
 | L-ACA-NSG | Container Apps: securing a virtual network with NSGs (future) — https://learn.microsoft.com/en-us/azure/container-apps/firewall-integration |
+| L-SVCTAGS | Virtual network service tags — https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview |
 
 ---
 
@@ -113,6 +114,9 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | NSG-11s | Sim: single prefix/port fields only. Plural lists, other service tags, application security groups and address ranges written as `a-b` are refused as not modelled | — | SIM |
 | NSG-12 | Zero or one NSG per subnet; the same or a different NSG per subnet; an NSG can be associated to a NIC, to the subnet the NIC is in, or both. Associating to subnets is recommended over individual NICs | L-PLAN | VERIFIED |
 | NSG-13s | Sim: security rules are child resources (`Microsoft.Network/networkSecurityGroups/securityRules`), created or updated with a PUT-style write and removed with a delete. Default rules (NSG-3) are created with the NSG and are read-only | — | SIM |
+| NSG-14 | "For inbound traffic, network security groups process traffic after Azure translates public IP addresses to private IP addresses. For outbound traffic, network security groups process traffic before translating private IP addresses to public IP addresses." To specify a particular Azure resource, use its private IP address | L-NSG | VERIFIED |
+| NSG-15 | Service tags: **VirtualNetwork** = the VNet address space, connected on-premises address spaces, peered VNets, VNets connected to a virtual network gateway, the virtual IP of the host, and address prefixes used on user-defined routes (might also contain default routes). **Internet** = "the IP address space that's outside the virtual network and reachable by the public internet", including Azure-owned public IP space. **AzureLoadBalancer** = the virtual IP of the host (168.63.129.16) where Azure health probes originate (probe traffic only) | L-SVCTAGS | VERIFIED |
+| NSG-15s | Sim: an address in the VNet's own address space, or 168.63.129.16, matches `VirtualNetwork`. 168.63.129.16 matches `AzureLoadBalancer`. An address outside the VNet that isn't in a private range (VNET-2) matches `Internet`. A private address outside the VNet (it would need peering, a gateway or on-premises routing, none modelled yet) is refused as not modelled when a service-tag rule has to decide | — | SIM |
 
 ## PIP — Public IP addresses
 
@@ -184,6 +188,9 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | NW-3 | IP flow verify needs a Network Watcher instance in the VM's subscription and region | L-IPFV | VERIFIED |
 | NW-3u | Whether Network Watcher is enabled automatically per region | — | UNCERTAIN, sim assumes enabled and labels it |
 | NW-4 | Effective security rules = aggregation of the NIC NSG and subnet NSG rules. The portal shows separate tabs per NSG. CLI/PowerShell show `NetworkSecurityGroup`, `Association` (NetworkInterface/Subnet) and rules prefixed `defaultSecurityRules/` or `securityRules/`. CLI: `az network nic list-effective-nsg` | L-ESR | VERIFIED |
+| NW-5u | Whether IP flow verify works for a VM that isn't running: the IP flow verify page doesn't say (effective security rules do need a running VM, VM-5) | L-IPFV | UNCERTAIN, refused as not modelled |
+| NW-6s | Sim: IP flow verify evaluates the VM's NIC that owns the given local IP, reports the rule of the last NSG evaluated (the deciding one) and its NSG, and shows no NSG link when a default rule decided (NW-1). Results use the portal wording "Access allowed" / "Access denied" | — | SIM |
+| NW-7s | Sim: when neither the subnet nor the NIC has an NSG, inbound internet traffic to a VM is denied with no deciding rule (NSG-8); IP flow verify then reports "Access denied" without a rule. Every other flow without any NSG is not modelled (NSG-8u) | — | SIM |
 
 ## MON — Monitoring
 
@@ -252,3 +259,4 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | 2026-10-08 | Added L-ACTSCHEMA and MON-8 to MON-13s (activity log events) for the engine core (step 2). Narrowed MON-7u |
 | 2026-10-08 | Step 4 research: added L-PLAN, L-PRIVIP, L-NICADDR, L-RGPORTAL, L-RGREST, L-RID, L-RBACDEF, L-REGIONS, L-NSGREST and template references. New VNET-6..9u, SUB-8, SUB-9s, NSG-2s, NSG-11..13s, PIP-6..9u, NIC-7, NIC-8s, PRIV-1..3, NAME-6..8, ARM-1..3s, RG-1, RG-2u, REG-1. Resolved ARM-1u and MON-7u. NSG-2u narrowed (still open) |
 | 2026-10-09 | Step 4c research (VMs): L-VMSTATES, L-FINDIMG, L-DISKS, L-DISKSKU, L-BSV2, L-TPL-VM. New VM-1s, VM-7..VM-17u. ARM-4u widened to VMs |
+| 2026-10-10 | Step 5 (flow engine): added L-SVCTAGS, NSG-14, NSG-15, NSG-15s, NW-5u, NW-6s, NW-7s |

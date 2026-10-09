@@ -17,6 +17,7 @@ export * from './virtualNetworks.ts'
 export * from './networkSecurityGroups.ts'
 export * from './networkInterfaces.ts'
 export * from './virtualMachines.ts'
+export * from './flow.ts'
 
 export const AZURE_COMMANDS: readonly CommandHandler[] = [
   addSubscription as CommandHandler,
