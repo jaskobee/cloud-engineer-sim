@@ -116,4 +116,5 @@ UI: Deployments tab (`DeploymentsPanel.tsx`), `Creating…` badges in the resour
 
 - Small, reviewable steps (see `Docs/BOOTSTRAP_REPORT.md` §I). Finish each with `npm run check`.
 - Test the engine more than the UI. Every Azure rule has a test that asserts its rule ID.
-- Write the `visual-infrastructure` skill (`.claude/skills/`) before building the canvas (step 7).
+- Canvas and inspector work follows `.claude/skills/visual-infrastructure/SKILL.md` (draft v0.1, awaiting Jasko's
+  review; resolve its open questions before building the canvas in step 7).
