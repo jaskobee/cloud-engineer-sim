@@ -1,5 +1,7 @@
 # One pipeline: every push and pull request is verified; pushes to main are also deployed
-# to GitHub Pages. Action versions follow GitHub's "Using custom workflows with GitHub Pages" docs.
+# to GitHub Pages. Action versions follow GitHub's "Using custom workflows with GitHub Pages" docs
+# (Node 24 majors). Runners are pinned to Ubuntu 24.04: ubuntu-latest moves to Ubuntu 26 from 2026-10-19,
+# and the Playwright browser dependencies are checked on 24.04.
 name: CI
 
 on:
@@ -19,7 +21,7 @@ concurrency:
 jobs:
   verify:
     name: Typecheck, lint, test, build, smoke test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
 
@@ -51,7 +53,7 @@ jobs:
 
       - name: Upload Pages artifact
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
@@ -59,7 +61,7 @@ jobs:
     name: Deploy to GitHub Pages
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: verify
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       pages: write
       id-token: write
@@ -72,4 +74,4 @@ jobs:
     steps:
       - name: Deploy artifact
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
