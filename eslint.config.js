@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import globals from 'globals'
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules'] },
+  { ignores: ['dist', 'node_modules', 'test-results', 'playwright-report'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -13,7 +13,7 @@ export default tseslint.config(
     languageOptions: { globals: globals.browser },
   },
   {
-    files: ['tests/**/*.ts', 'vite.config.ts', 'eslint.config.js'],
+    files: ['tests/**/*.ts', 'e2e/**/*.ts', 'vite.config.ts', 'playwright.config.ts', 'eslint.config.js'],
     languageOptions: { globals: globals.node },
   },
   {

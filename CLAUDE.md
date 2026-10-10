@@ -36,7 +36,9 @@ Vite 8 · React 19 · TypeScript 6.0 (strict; pinned below 6.1 because typescrip
 
 - `npm run dev`: local dev server (http://localhost:5173/cloud-engineer-sim/)
 - `npm run check`: typecheck, lint, test, build. Must be green before every commit.
-- CI: `.github/workflows/ci.yml` verifies every push/PR and deploys `main` to GitHub Pages.
+- `npm run test:e2e`: Playwright smoke test of the built `dist` (`e2e/*.e2e.ts`, needs `npm run build` first). In this
+  container: `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium npm run test:e2e`.
+- CI: `.github/workflows/ci.yml` verifies every push/PR (including the smoke test) and deploys `main` to GitHub Pages.
 
 ## Layout
 
@@ -177,6 +179,16 @@ and opened hints are mission state (`mission/setMode`, `mission/revealHint`; `hi
 parallel traffic edges get lanes. INFO: `src/missions/info.ts` (every paragraph cites AZURE_FACTS rules; wording only
 from those rules), `Info.tsx` (`InfoButton`, `InfoDialog` with the Learn sources), opened from the inspector type label,
 objectives and the Concepts list (`session.ui.info`).
+
+## Progression and smoke test (step 11)
+
+`src/missions/progress.ts` (D-6, game design, not Azure): `missionResult(def, world)` derives the architecture review
+(mission data `review`: items per Security / Reliability / Observability, each with reason and rule IDs), XP
+(`XP`, `MODE_MULTIPLIER`) and badges (`badges`) from the finished world. Career: `levelFor(xp)` (MVP §31 titles),
+`Profile` in its own localStorage key (`readProfile` / `writeProfile` in `persistence.ts`), `recordRun` counts a run
+(mission + seed) once; the Workspace records it when the mission completes. Smoke test: `e2e/smoke.e2e.ts` (start →
+mission → quest, canvas, hints, INFO, tools; save + continue; 390 px), `playwright.config.ts` serves `dist` with
+`vite preview` under the Pages base path.
 
 ## Working discipline
 
