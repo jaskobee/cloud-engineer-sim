@@ -1,1 +1,272 @@
-{}
+{
+  "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview": {
+    "key": "L-ALERTS",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview",
+    "updated": "2026-07-08T22:11:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-monitor/app/availability": {
+    "key": "L-AVAIL",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/app/availability",
+    "updated": "2026-09-28T22:09:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-monitor/app/create-workspace-resource": {
+    "key": "L-AICREATE",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/app/create-workspace-resource",
+    "updated": "2026-10-09T22:14:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-monitor/fundamentals/azure-monitor-network-access": {
+    "key": "L-MONNET",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/fundamentals/azure-monitor-network-access",
+    "updated": "2026-05-27T22:17:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-retention-configure": {
+    "key": "L-LARET",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-retention-configure",
+    "updated": "2026-09-29T22:18:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-monitor/platform/activity-log": {
+    "key": "L-ACTLOG",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/platform/activity-log",
+    "updated": "2026-09-22T06:04:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-monitor/platform/activity-log-schema": {
+    "key": "L-ACTSCHEMA",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/platform/activity-log-schema",
+    "updated": "2026-09-22T06:04:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-monitor/reference/supported-metrics/microsoft-compute-virtualmachines-metrics": {
+    "key": "L-VMMETRICS",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/reference/supported-metrics/microsoft-compute-virtualmachines-metrics",
+    "updated": "2026-09-14T22:15:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appavailabilityresults": {
+    "key": "L-AVTABLE",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appavailabilityresults",
+    "updated": "2026-07-28T17:16:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/async-operations": {
+    "key": "L-ASYNC",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/async-operations",
+    "updated": "2026-03-26T17:13:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal": {
+    "key": "L-RGPORTAL",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal",
+    "updated": "2026-03-04T23:27:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription": {
+    "key": "L-MOVE",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription",
+    "updated": "2026-03-16T22:10:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules": {
+    "key": "L-NAMES",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules",
+    "updated": "2026-08-07T17:22:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-history": {
+    "key": "L-DEPHIST",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-history",
+    "updated": "2026-06-26T22:12:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/resource-dependency": {
+    "key": "L-DEPEND",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/resource-dependency",
+    "updated": "2026-06-26T22:12:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions-resource": {
+    "key": "L-RID",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/template-functions-resource",
+    "updated": "2026-08-10T22:12:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/container-apps/firewall-integration": {
+    "key": "L-ACA-NSG",
+    "url": "https://learn.microsoft.com/en-us/azure/container-apps/firewall-integration",
+    "updated": "2026-05-19T22:14:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview": {
+    "key": "L-IPFV",
+    "url": "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview",
+    "updated": "2026-07-31T19:23:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/reliability/regions-list": {
+    "key": "L-REGIONS",
+    "url": "https://learn.microsoft.com/en-us/azure/reliability/regions-list",
+    "updated": "2026-09-23T22:08:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions": {
+    "key": "L-RBACDEF",
+    "url": "https://learn.microsoft.com/en-us/azure/role-based-access-control/role-definitions",
+    "updated": "2026-05-24T11:44:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/templates/microsoft.compute/virtualmachines": {
+    "key": "L-TPL-VM",
+    "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.compute/virtualmachines",
+    "updated": "2026-09-21T19:17:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/templates/microsoft.insights/components": {
+    "key": "L-TPL-AI",
+    "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.insights/components",
+    "updated": "2026-08-18T00:29:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/templates/microsoft.insights/metricalerts": {
+    "key": "L-TPL-MA",
+    "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.insights/metricalerts",
+    "updated": "2026-09-21T19:17:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/templates/microsoft.insights/webtests": {
+    "key": "L-TPL-WT",
+    "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.insights/webtests",
+    "updated": "2026-07-20T15:14:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/templates/microsoft.network/networkinterfaces": {
+    "key": "L-TPL-NIC",
+    "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.network/networkinterfaces",
+    "updated": "2026-09-21T19:17:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/templates/microsoft.network/networksecuritygroups/securityrules": {
+    "key": "L-TPL-RULE",
+    "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.network/networksecuritygroups/securityrules",
+    "updated": "2026-09-21T19:17:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/templates/microsoft.network/publicipaddresses": {
+    "key": "L-TPL-PIP",
+    "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.network/publicipaddresses",
+    "updated": "2026-09-21T19:17:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/templates/microsoft.network/virtualnetworks": {
+    "key": "L-TPL-VNET",
+    "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.network/virtualnetworks",
+    "updated": "2026-09-21T19:17:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/templates/microsoft.operationalinsights/workspaces": {
+    "key": "L-TPL-LAW",
+    "url": "https://learn.microsoft.com/en-us/azure/templates/microsoft.operationalinsights/workspaces",
+    "updated": "2026-09-21T19:17:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types": {
+    "key": "L-DISKS",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/disks-types",
+    "updated": "2026-09-16T06:06:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage": {
+    "key": "L-FINDIMG",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/cli-ps-findimage",
+    "updated": "2026-06-24T22:03:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/faq": {
+    "key": "L-VMFAQ",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/faq",
+    "updated": "2026-06-24T06:10:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal": {
+    "key": "L-VMQS",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/linux/quick-create-portal",
+    "updated": "2026-06-24T06:10:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-machines/network-overview": {
+    "key": "L-VMNET",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/network-overview",
+    "updated": "2026-02-13T12:10:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/general-purpose/bsv2-series": {
+    "key": "L-BSV2",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/general-purpose/bsv2-series",
+    "updated": "2026-07-27T22:03:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-machines/states-billing": {
+    "key": "L-VMSTATES",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-machines/states-billing",
+    "updated": "2026-06-24T06:10:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem": {
+    "key": "L-ESR",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem",
+    "updated": "2026-10-08T05:11:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/default-outbound-access": {
+    "key": "L-OUTBOUND",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/default-outbound-access",
+    "updated": "2026-09-10T22:03:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/private-ip-addresses": {
+    "key": "L-PRIVIP",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/private-ip-addresses",
+    "updated": "2025-06-19T22:03:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/public-ip-addresses": {
+    "key": "L-PIP",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/public-ip-addresses",
+    "updated": "2026-02-25T06:24:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/virtual-network-network-interface-addresses": {
+    "key": "L-NICADDR",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/virtual-network-network-interface-addresses",
+    "updated": "2025-10-08T22:11:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group": {
+    "key": "L-NSGMAN",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group",
+    "updated": "2025-10-08T22:11:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works": {
+    "key": "L-NSGHOW",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works",
+    "updated": "2025-07-29T05:09:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview": {
+    "key": "L-NSG",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview",
+    "updated": "2025-10-23T11:11:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview": {
+    "key": "L-SVCTAGS",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview",
+    "updated": "2026-09-17T17:12:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-vnet-plan-design-arm": {
+    "key": "L-PLAN",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-vnet-plan-design-arm",
+    "updated": "2026-01-22T19:36:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq": {
+    "key": "L-VNETFAQ",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-networks-faq",
+    "updated": "2026-07-09T22:04:00Z"
+  },
+  "https://learn.microsoft.com/en-us/javascript/api/@azure/arm-compute/diskstorageaccounttypes": {
+    "key": "L-DISKSKU",
+    "url": "https://learn.microsoft.com/en-us/javascript/api/@azure/arm-compute/diskstorageaccounttypes",
+    "updated": "2026-08-24T11:11:00Z"
+  },
+  "https://learn.microsoft.com/en-us/javascript/api/@azure/arm-compute/sshpublickey": {
+    "key": "L-SSHKEY",
+    "url": "https://learn.microsoft.com/en-us/javascript/api/@azure/arm-compute/sshpublickey",
+    "updated": "2026-08-24T11:11:00Z"
+  },
+  "https://learn.microsoft.com/en-us/rest/api/compute/virtual-machines/create-or-update": {
+    "key": "L-VMREST",
+    "url": "https://learn.microsoft.com/en-us/rest/api/compute/virtual-machines/create-or-update",
+    "updated": "2026-09-29T22:30:00Z"
+  },
+  "https://learn.microsoft.com/en-us/rest/api/resources/deployments/get": {
+    "key": "L-DEPGET",
+    "url": "https://learn.microsoft.com/en-us/rest/api/resources/deployments/get",
+    "updated": "2026-08-27T22:28:00Z"
+  },
+  "https://learn.microsoft.com/en-us/rest/api/resources/resource-groups/create-or-update": {
+    "key": "L-RGREST",
+    "url": "https://learn.microsoft.com/en-us/rest/api/resources/resource-groups/create-or-update",
+    "updated": "2025-12-09T22:14:00Z"
+  },
+  "https://learn.microsoft.com/en-us/rest/api/virtualnetwork/network-security-groups/create-or-update": {
+    "key": "L-NSGPUT",
+    "url": "https://learn.microsoft.com/en-us/rest/api/virtualnetwork/network-security-groups/create-or-update",
+    "updated": "2026-10-08T22:27:00Z"
+  },
+  "https://learn.microsoft.com/en-us/rest/api/virtualnetwork/network-security-groups/get": {
+    "key": "L-NSGREST",
+    "url": "https://learn.microsoft.com/en-us/rest/api/virtualnetwork/network-security-groups/get",
+    "updated": "2026-10-08T22:27:00Z"
+  }
+}
