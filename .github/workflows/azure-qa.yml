@@ -1,0 +1,112 @@
+# QA layer 2 (AI): the azure-qa agent (.claude/agents/azure-qa.md) audits every push to main against live
+# Microsoft Learn pages and reports BLOCKER/MAJOR/MINOR findings with verbatim evidence. Read-only: it never
+# changes code. Findings open an issue labelled azure-qa; a clean audit only writes the job summary.
+#
+# Setup (once): install the Claude GitHub app on the repo and add ONE repository secret:
+#   CLAUDE_CODE_OAUTH_TOKEN  (from `claude setup-token`, runs on your Claude subscription), or
+#   ANTHROPIC_API_KEY        (Anthropic Console key, API billing).
+# Until a secret exists, the job skips with a notice. Docs: https://code.claude.com/docs/en/github-actions
+name: Azure QA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: 'What to audit: a commit range (e.g. abc123..def456) or an area (e.g. "full audit of src/missions/info.ts")'
+        required: false
+
+permissions:
+  contents: read
+  issues: write
+  id-token: write # the Claude GitHub app authenticates with an OIDC token
+
+concurrency:
+  group: azure-qa
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Audit against Microsoft Learn
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check for Claude credentials
+        id: auth
+        env:
+          API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          if [ -n "$API_KEY$OAUTH_TOKEN" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Azure QA skipped: add CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY as a repository secret to enable it."
+          fi
+
+      - uses: actions/checkout@v6
+        if: steps.auth.outputs.ready == 'true'
+        with:
+          fetch-depth: 0
+
+      - name: Work out what to audit
+        if: steps.auth.outputs.ready == 'true'
+        id: scope
+        env:
+          INPUT_SCOPE: ${{ github.event.inputs.scope }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ -n "$INPUT_SCOPE" ]; then
+            scope="$INPUT_SCOPE"
+          elif [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
+            scope="the commits ${BEFORE}..${GITHUB_SHA} pushed to main"
+          else
+            scope="the latest commit ${GITHUB_SHA}"
+          fi
+          echo "scope=$scope" >> "$GITHUB_OUTPUT"
+
+      - name: Audit
+        if: steps.auth.outputs.ready == 'true'
+        id: qa
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You are running unattended in CI. Read .claude/agents/azure-qa.md and follow it exactly as your
+            instructions; read CLAUDE.md for the project rules.
+            Audit: ${{ steps.scope.outputs.scope }}.
+            If the changes touch nothing that states or enforces Azure behaviour (no Docs/AZURE_FACTS.md, no
+            src/engine/azure, no player-facing text), say PASS with one line explaining why, and stop.
+            Do not modify any file. Your final message must be the complete report in the format the agent
+            definition gives, starting with the PASS or FINDINGS line.
+          claude_args: |
+            --max-turns 80
+            --allowedTools "Read,Glob,Grep,Bash(git log:*),Bash(git diff:*),Bash(git show:*),WebFetch,WebSearch"
+
+      - name: Report
+        if: always() && steps.auth.outputs.ready == 'true' && steps.qa.outputs.execution_file != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXECUTION_FILE: ${{ steps.qa.outputs.execution_file }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SCOPE: ${{ steps.scope.outputs.scope }}
+        run: |
+          report=$(jq -r '[.[] | select(.type == "result")] | last | .result // empty' "$EXECUTION_FILE" 2>/dev/null || true)
+          if [ -z "$report" ]; then
+            report="The audit finished without a readable report. See the run log."
+          fi
+          {
+            echo "### Azure QA: $SCOPE"
+            echo
+            echo "$report"
+          } >> "$GITHUB_STEP_SUMMARY"
+          first=$(printf '%s\n' "$report" | grep -m1 -E '^(PASS|FINDINGS)' || true)
+          if [ "${first#PASS}" != "$first" ]; then
+            echo "Audit passed."
+            exit 0
+          fi
+          gh label create azure-qa --color D93F0B --description "Azure accuracy findings from the azure-qa agent" 2>/dev/null || true
+          printf '%s\n\n---\nAudited: %s\nRun: %s\n' "$report" "$SCOPE" "$RUN_URL" > qa-report.md
+          gh issue create --title "Azure QA: ${first:-findings} (${GITHUB_SHA::7})" --label azure-qa --body-file qa-report.md

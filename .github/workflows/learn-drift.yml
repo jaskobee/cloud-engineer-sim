@@ -1,0 +1,58 @@
+# QA layer 1 (deterministic): are the Microsoft Learn pages our rules cite still the pages we verified?
+# Runs on every push to main and weekly, because Learn changes on its own schedule. When a cited page's
+# "last updated" date changed or the page broke, it opens (or comments on) one issue labelled learn-drift,
+# listing the rules to re-verify. It never blocks a deploy.
+name: Learn drift
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 5 * * 1' # Mondays 05:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: learn-drift
+  cancel-in-progress: false
+
+jobs:
+  drift:
+    name: Check cited Learn pages
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      # The script only uses Node built-ins, so no npm install is needed.
+      - name: Compare page dates with Docs/learn-sources.lock.json
+        run: |
+          npm run learn:drift
+          echo "### Learn drift" >> "$GITHUB_STEP_SUMMARY"
+          cat learn-drift/summary.json >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the updated lock
+        uses: actions/upload-artifact@v7
+        with:
+          name: learn-drift
+          path: learn-drift/
+          retention-days: 30
+
+      - name: Open or update the learn-drift issue
+        if: hashFiles('learn-drift/report.md') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create learn-drift --color FBCA04 --description "Cited Microsoft Learn pages changed or broke" 2>/dev/null || true
+          number=$(gh issue list --label learn-drift --state open --json number --jq '.[0].number // empty')
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body-file learn-drift/report.md
+          else
+            gh issue create --title "Learn pages changed: re-verify the rules that cite them" --label learn-drift --body-file learn-drift/report.md
+          fi

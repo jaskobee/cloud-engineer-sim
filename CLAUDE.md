@@ -190,6 +190,20 @@ objectives and the Concepts list (`session.ui.info`).
 mission → quest, canvas, hints, INFO, tools; save + continue; 390 px), `playwright.config.ts` serves `dist` with
 `vite preview` under the Pages base path.
 
+## Azure QA (accuracy checks against Microsoft Learn)
+
+Two layers check that the game teaches Azure correctly:
+1. **Learn drift** (deterministic, `.github/workflows/learn-drift.yml`, every push to main + weekly):
+   `npm run learn:drift` (`scripts/learn-drift.ts`, `scripts/learnDrift.ts`) fetches every page cited in
+   `Docs/AZURE_FACTS.md` and compares its last-updated date with `Docs/learn-sources.lock.json`. Changed or broken pages
+   open/update an issue labelled `learn-drift` listing the rules to re-verify. After re-verifying, update the lock
+   (`npm run learn:drift -- --update` where Learn is reachable, or take `lock.json` from the run's artifact).
+2. **azure-qa agent** (`.claude/agents/azure-qa.md`, read-only): verifies rules, enforced behaviour and player-facing
+   text against live Learn pages with verbatim quotes and reports BLOCKER/MAJOR/MINOR findings. Run it after any
+   change to Azure behaviour, the register or player-facing text ("use the azure-qa agent on …"). In CI
+   (`.github/workflows/azure-qa.yml`) it audits every push to main and opens an `azure-qa` issue for findings, once a
+   `CLAUDE_CODE_OAUTH_TOKEN` or `ANTHROPIC_API_KEY` secret exists. Findings are fixed in normal commits, never by the agent.
+
 ## Working discipline
 
 - Small, reviewable steps (see `Docs/BOOTSTRAP_REPORT.md` §I). Finish each with `npm run check`.
