@@ -7,6 +7,7 @@ Newest first within each section.
 
 | ID | Date | Decision | Why |
 |---|---|---|---|
+| D-5 | 2026-10-10 | Canvas v1 (visual-infrastructure skill v1.0): (1) Microsoft's Azure architecture icons, unmodified with the product name beside them, when available (`public/azure-icons/`), text labels until then; (2) traffic edges = watched flows only: mission-declared plus flows pinned from IP flow verify; (3) a VM is drawn inside its NIC's subnet; (4) auto-layout only, no dragging yet; (5) below 900 px the resource list replaces the canvas; (6) layers Network / Security / Health | Jasko accepted the six proposals in the skill draft. Icons are permitted for "architectural diagrams, training materials, or documentation" (Learn: Azure architecture icons). Watched flows keep the canvas honest: a rule says what's permitted, not what's happening |
 | D-4 | 2026-10-08 | We write our own `visual-infrastructure` skill, before building the canvas (step 7) | The canvas is the product's main debugging/learning surface. Its rules should be explicit and reviewable |
 | D-3 | 2026-10-08 | Azure accuracy comes from **Microsoft Learn**. Every enforced rule is cited in `AZURE_FACTS.md`. Uncertain points are flagged and not implemented as stated | The player must never learn something they'd have to unlearn for a certification or the job |
 | D-2 | 2026-10-08 | The first vertical slice uses **Virtual Machines** (Container Apps later) | Simpler to model. NSG troubleshooting is accurate for VMs (it isn't for external Container Apps environments, see ACA-1) |

@@ -18,6 +18,7 @@ export * from './networkSecurityGroups.ts'
 export * from './networkInterfaces.ts'
 export * from './virtualMachines.ts'
 export * from './flow.ts'
+export * from './dependencies.ts'
 import { withProvisioning } from './provisioning.ts'
 
 export * from './provisioning.ts'

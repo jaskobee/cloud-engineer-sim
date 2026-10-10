@@ -38,6 +38,7 @@ function Field({ label, children }: { label: string; children: (id: string) => R
 export function IpFlowVerifyPanel() {
   const world = useNetworkWorld()
   const select = useGame(s => s.select)
+  const watchFlow = useGame(s => s.watchFlow)
   const vms = vmsOf(world)
   const [vmId, setVmId] = useState<ArmId>(vms[0]?.id ?? '')
   const vm = vms.find(v => v.id === vmId) ?? vms[0]
@@ -116,6 +117,13 @@ export function IpFlowVerifyPanel() {
               Checked in order: {result.verdict.stages.map(s => `${s.association === 'Subnet' ? 'subnet' : 'network interface'} NSG ${s.nsgName} (${s.ruleName}, ${s.access.toLowerCase()})`).join(', then ')}.
             </p>
           )}
+          <div>
+            <button type="button" className="button" onClick={() => watchFlow({
+              vmId: vm.id, direction, protocol, localPort: Number(localPort), remoteIp: remoteIp.trim(), remotePort: Number(remotePort),
+            })}>
+              Watch on canvas
+            </button>
+          </div>
         </div>
       )}
     </div>

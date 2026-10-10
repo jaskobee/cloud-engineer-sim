@@ -39,11 +39,37 @@ export interface CreateRequest {
   preset?: Record<string, string>
 }
 
+/** Canvas layers change emphasis, never data (visual-infrastructure skill, D-5). */
+export type CanvasLayer = 'network' | 'security' | 'health'
+
+/**
+ * A connection the canvas watches (D-5): pinned from IP flow verify, later also declared by missions.
+ * Seen from `vmId`'s primary NIC, in IP flow verify's terms (NW-1). View state, never world state.
+ */
+export interface WatchedFlow {
+  id: string
+  vmId: ArmId
+  direction: 'Inbound' | 'Outbound'
+  protocol: 'Tcp' | 'Udp'
+  localPort: number
+  remoteIp: string
+  remotePort: number
+}
+
+/** Selection IDs for watched flows, so the inspector can show a flow like a resource. */
+export const FLOW_SELECTION_PREFIX = 'flow:'
+
 /** Everything that isn't the simulated world: what the player is looking at and how much help they get. */
 export interface Session {
   missionId: string | null
   mode: AssistanceMode
-  ui: { bottomTab: BottomTab; selectedId: ArmId | null; creating: CreateRequest | null }
+  ui: {
+    bottomTab: BottomTab
+    /** An ARM ID, or `flow:<id>` for a watched flow. */
+    selectedId: ArmId | null
+    creating: CreateRequest | null
+    canvas: { layer: CanvasLayer; watched: WatchedFlow[] }
+  }
 }
 
 export type PlayerCommand = Omit<Command, 'caller'> & { caller?: string }
@@ -63,6 +89,10 @@ export interface GameState {
   select(id: ArmId | null): void
   /** Open the create panel (or close it with null). Opening it clears the selection. */
   startCreate(request: CreateRequest | null): void
+  setCanvasLayer(layer: CanvasLayer): void
+  /** Watch a connection on the canvas (the same connection twice is kept once) and select it. */
+  watchFlow(flow: Omit<WatchedFlow, 'id'>): string
+  unwatchFlow(id: string): void
 }
 
 export type GameStore = StoreApi<GameState>
@@ -83,7 +113,11 @@ export function newWorld(seed: string): World {
 export function createGameStore({ world, registry = DEFAULT_REGISTRY }: { world: World; registry?: Registry }): GameStore {
   return createStore<GameState>()((set, get) => ({
     world,
-    session: { missionId: null, mode: 'guided', ui: { bottomTab: 'activity-log', selectedId: null, creating: null } },
+    session: {
+      missionId: null,
+      mode: 'guided',
+      ui: { bottomTab: 'activity-log', selectedId: null, creating: null, canvas: { layer: 'network', watched: [] } },
+    },
     lastRefusal: null,
 
     dispatch(command) {
@@ -112,6 +146,36 @@ export function createGameStore({ world, registry = DEFAULT_REGISTRY }: { world:
 
     startCreate(request) {
       set(s => ({ session: { ...s.session, ui: { ...s.session.ui, creating: request, selectedId: request ? null : s.session.ui.selectedId } } }))
+    },
+
+    setCanvasLayer(layer) {
+      set(s => ({ session: { ...s.session, ui: { ...s.session.ui, canvas: { ...s.session.ui.canvas, layer } } } }))
+    },
+
+    watchFlow(flow) {
+      const id = [flow.vmId.toLowerCase(), flow.direction, flow.protocol, flow.localPort, flow.remoteIp, flow.remotePort].join('|')
+      set(s => {
+        const { canvas } = s.session.ui
+        const watched = canvas.watched.some(w => w.id === id) ? canvas.watched : [...canvas.watched, { ...flow, id }]
+        return { session: { ...s.session, ui: { ...s.session.ui, creating: null, selectedId: `${FLOW_SELECTION_PREFIX}${id}`, canvas: { ...canvas, watched } } } }
+      })
+      return id
+    },
+
+    unwatchFlow(id) {
+      set(s => {
+        const { canvas, selectedId } = s.session.ui
+        return {
+          session: {
+            ...s.session,
+            ui: {
+              ...s.session.ui,
+              selectedId: selectedId === `${FLOW_SELECTION_PREFIX}${id}` ? null : selectedId,
+              canvas: { ...canvas, watched: canvas.watched.filter(w => w.id !== id) },
+            },
+          },
+        }
+      })
     },
   }))
 }

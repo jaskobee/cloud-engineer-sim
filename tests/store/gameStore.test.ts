@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { TICK_MS } from '../../src/engine/index.ts'
-import { PLAYER_PRINCIPAL, SANDBOX_SUBSCRIPTION, createGameStore, newWorld } from '../../src/store/gameStore.ts'
+import { FLOW_SELECTION_PREFIX, PLAYER_PRINCIPAL, SANDBOX_SUBSCRIPTION, createGameStore, newWorld } from '../../src/store/gameStore.ts'
 
 const store = () => createGameStore({ world: newWorld('store-test') })
 
@@ -8,7 +8,10 @@ describe('game store', () => {
   it('starts on the given world with a default session', () => {
     const s = store().getState()
     expect(s.world.rng.seed).toBe('store-test')
-    expect(s.session).toEqual({ missionId: null, mode: 'guided', ui: { bottomTab: 'activity-log', selectedId: null, creating: null } })
+    expect(s.session).toEqual({
+      missionId: null, mode: 'guided',
+      ui: { bottomTab: 'activity-log', selectedId: null, creating: null, canvas: { layer: 'network', watched: [] } },
+    })
     expect(s.lastRefusal).toBeNull()
   })
 
@@ -91,5 +94,33 @@ describe('game store: building (step 4b)', () => {
     expect(st.getState().session.ui).toMatchObject({ selectedId: null, creating: { kind: 'subnet' } })
     st.getState().select('/subscriptions/x/resourceGroups/rg')
     expect(st.getState().session.ui).toMatchObject({ selectedId: '/subscriptions/x/resourceGroups/rg', creating: null })
+  })
+})
+
+describe('canvas view state (D-5): view only, never the world', () => {
+  const flow = { vmId: '/subscriptions/s/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/vm', direction: 'Inbound' as const, protocol: 'Tcp' as const, localPort: 443, remoteIp: '198.51.100.7', remotePort: 50000 }
+
+  it('watches a flow once, selects it, and leaves the world untouched', () => {
+    const st = store()
+    const world = st.getState().world
+    const id = st.getState().watchFlow(flow)
+    expect(st.getState().watchFlow({ ...flow, vmId: flow.vmId.toUpperCase() })).toBe(id)
+    expect(st.getState().session.ui.canvas.watched).toHaveLength(1)
+    expect(st.getState().session.ui.selectedId).toBe(`${FLOW_SELECTION_PREFIX}${id}`)
+    expect(st.getState().world).toBe(world)
+  })
+
+  it('stops watching and clears the selection if it was selected', () => {
+    const st = store()
+    const id = st.getState().watchFlow(flow)
+    st.getState().unwatchFlow(id)
+    expect(st.getState().session.ui.canvas.watched).toEqual([])
+    expect(st.getState().session.ui.selectedId).toBeNull()
+  })
+
+  it('switches layers', () => {
+    const st = store()
+    st.getState().setCanvasLayer('security')
+    expect(st.getState().session.ui.canvas.layer).toBe('security')
   })
 })

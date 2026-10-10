@@ -112,9 +112,19 @@ VM-19s). Security rules apply once their write succeeds (ARM-14s). History: newe
 Tests: `ok()` in `tests/engine/azure/fixtures.ts` waits for the deployment (`settle`); `start()` doesn't.
 UI: Deployments tab (`DeploymentsPanel.tsx`), `Creating…` badges in the resource list, Create switches to Deployments.
 
+## Architecture canvas (step 7)
+
+Follow `.claude/skills/visual-infrastructure/SKILL.md` (v1.0, decisions D-4/D-5). `src/ui/canvas/graph.ts`:
+`buildCanvasGraph(world, watched)` is pure and tested headless (`tests/ui/canvasGraph.test.ts`): nesting
+RG → VNet → subnet → compute unit (a VM drawn through its NIC), deterministic auto-layout, association lines from
+`azure.dependenciesOf` (`src/engine/azure/dependencies.ts`), traffic lines only from `ipFlowVerify` via
+`evaluateWatchedFlow`. Watched flows and the layer are view state in `session.ui.canvas` (`watchFlow`,
+`unwatchFlow`, `setCanvasLayer`); a selected flow is `flow:<id>` and opens `FlowInspector.tsx`. React Flow
+(`@xyflow/react`) is lazy-loaded; below 900 px the resource list replaces the canvas. Azure icons (D-5) go
+unmodified into `public/azure-icons/` once downloaded (the container's proxy blocks the download).
+
 ## Working discipline
 
 - Small, reviewable steps (see `Docs/BOOTSTRAP_REPORT.md` §I). Finish each with `npm run check`.
 - Test the engine more than the UI. Every Azure rule has a test that asserts its rule ID.
-- Canvas and inspector work follows `.claude/skills/visual-infrastructure/SKILL.md` (draft v0.1, awaiting Jasko's
-  review; resolve its open questions before building the canvas in step 7).
+- Canvas and inspector work follows `.claude/skills/visual-infrastructure/SKILL.md` (v1.0).

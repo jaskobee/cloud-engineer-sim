@@ -1,12 +1,18 @@
-import { useContext, useEffect } from 'react'
+import { lazy, Suspense, useContext, useEffect } from 'react'
 import { browserScheduler, startTickLoop } from '../store/tickLoop.ts'
 import { browserStorage, writeSave } from '../store/persistence.ts'
 import { BottomTools } from './BottomTools.tsx'
 import { CreatePanel } from './CreatePanel.tsx'
 import { Inspector } from './Inspector.tsx'
 import { ResourceList } from './ResourceList.tsx'
+import { FlowInspector } from './canvas/FlowInspector.tsx'
+import { FLOW_SELECTION_PREFIX } from '../store/gameStore.ts'
+import { useMediaQuery } from './useMediaQuery.ts'
 import { GameStoreContext, useGame } from './gameContext.ts'
 import { TimeControls } from './TimeControls.tsx'
+
+/** React Flow is only loaded where the canvas is shown (wide screens), keeping the first load small. */
+const ArchitectureCanvas = lazy(() => import('./canvas/ArchitectureCanvas.tsx').then(m => ({ default: m.ArchitectureCanvas })))
 
 /** The player's desk: quest on the left, architecture in the middle, inspector on the right, tools below. */
 export function Workspace() {
@@ -62,6 +68,7 @@ export function Workspace() {
 }
 
 function CanvasBody() {
+  const narrow = useMediaQuery('(max-width: 900px)')
   const startCreate = useGame(s => s.startCreate)
   const hasGroups = useGame(s => Object.keys(s.world.tenant.resourceGroups).length > 0)
   const create = (
@@ -78,11 +85,19 @@ function CanvasBody() {
       </div>
     )
   }
+  // Below 900 px the resource list replaces the canvas (D-5). Both read the same world.
+  if (narrow) {
+    return (
+      <div className="canvas-list">
+        <div className="canvas-toolbar">{create}</div>
+        <ResourceList />
+      </div>
+    )
+  }
   return (
-    <div className="canvas-list">
-      <div className="canvas-toolbar">{create}</div>
-      <ResourceList />
-    </div>
+    <Suspense fallback={<p className="empty">Loading the architecture canvas…</p>}>
+      <ArchitectureCanvas />
+    </Suspense>
   )
 }
 
@@ -100,6 +115,7 @@ function InspectorBody() {
   const selected = useGame(s => s.session.ui.selectedId)
   const creating = useGame(s => s.session.ui.creating)
   if (creating) return <CreatePanel request={creating} />
+  if (selected?.startsWith(FLOW_SELECTION_PREFIX)) return <FlowInspector flowId={selected.slice(FLOW_SELECTION_PREFIX.length)} />
   if (selected !== null) return <Inspector id={selected} />
   return (
     <>
