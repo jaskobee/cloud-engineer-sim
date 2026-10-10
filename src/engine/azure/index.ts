@@ -21,8 +21,10 @@ export * from './flow.ts'
 export * from './dependencies.ts'
 export * from './workloads.ts'
 export * from './traffic.ts'
+export * from './monitoring.ts'
 import { withProvisioning } from './provisioning.ts'
 import { setTraffic, setWorkload } from './workloads.ts'
+import { writeComponent, writeMetricAlert, writeWebTest, writeWorkspace } from './monitoring.ts'
 
 export * from './provisioning.ts'
 
@@ -38,6 +40,10 @@ export const AZURE_COMMANDS: readonly CommandHandler[] = ([
   writePublicIpAddress as CommandHandler,
   writeNetworkInterface as CommandHandler,
   writeVirtualMachine as CommandHandler,
+  writeWorkspace as CommandHandler,
+  writeComponent as CommandHandler,
+  writeWebTest as CommandHandler,
+  writeMetricAlert as CommandHandler,
   setWorkload as CommandHandler,
   setTraffic as CommandHandler,
 ] as CommandHandler[]).map(withProvisioning)

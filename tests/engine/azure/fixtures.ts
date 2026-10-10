@@ -126,3 +126,31 @@ export function pixelForgeWithApps(): World {
   w = ok(w, 'scenario/setWorkload', { vmId: VM_DB, workload: { kind: 'postgres', port: 5432 } })
   return ok(w, 'scenario/setWorkload', { vmId: VM_GAME, workload: { kind: 'game-api', port: 443, database: { ip: DB_IP, port: 5432 } } })
 }
+
+// ── Monitoring (step 8b) ─────────────────────────────────────────────────────────────────────────
+
+export const WORKSPACE = id(azure.WORKSPACE_TYPE, 'log-pixelforge-prod')
+export const COMPONENT = id(azure.COMPONENT_TYPE, 'appi-pixelforge-prod')
+export const WEBTEST = id(azure.WEBTEST_TYPE, 'game-api-health')
+export const ALERT_RULE = id(azure.METRIC_ALERT_TYPE, 'alert-game-api-availability')
+/** Five locations, so five runs every 300 s land one a minute (MON-2). */
+export const FIVE_LOCATIONS = ['emea-nl-ams-azr', 'emea-gb-db3-azr', 'emea-fr-pra-edge', 'emea-ru-msa-edge', 'us-va-ash-azr']
+
+export const gamePublicIp = (w: World) => String(azure.getResource(w, PIP_GAME)?.properties.ipAddress)
+
+export const webTestSettings = (w: World, overrides: Record<string, unknown> = {}) => ({
+  Enabled: true, Frequency: 300, Timeout: 30, RetryEnabled: true, Locations: FIVE_LOCATIONS,
+  RequestUrl: `https://${gamePublicIp(w)}/health`, ExpectedHttpStatusCode: 200, ...overrides,
+})
+
+/** pixelForgeWithApps watched by Application Insights: a standard test from five locations and a 3-of-5 alert rule. */
+export function pixelForgeMonitored(alert: Record<string, unknown> = {}): World {
+  let w = pixelForgeWithApps()
+  w = ok(w, 'arm/workspaces/write', { subscriptionId: SUB, resourceGroupName: RG, name: 'log-pixelforge-prod', location: 'westeurope' })
+  w = ok(w, 'arm/components/write', { subscriptionId: SUB, resourceGroupName: RG, name: 'appi-pixelforge-prod', location: 'westeurope', workspaceResourceId: WORKSPACE })
+  w = ok(w, 'arm/webtests/write', { subscriptionId: SUB, resourceGroupName: RG, name: 'game-api-health', location: 'westeurope', componentId: COMPONENT, settings: webTestSettings(w) })
+  return ok(w, 'arm/metricAlerts/write', {
+    subscriptionId: SUB, resourceGroupName: RG, name: 'alert-game-api-availability', webTestId: WEBTEST, severity: 1, enabled: true,
+    evaluationFrequency: 'PT1M', windowSize: 'PT5M', failedLocationCount: 3, autoMitigate: true, description: 'Game API unavailable', ...alert,
+  })
+}

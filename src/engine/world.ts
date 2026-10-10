@@ -53,6 +53,8 @@ export interface Resource {
   tags: Record<string, string>
   /** Top-level ARM `sku`, for the types that have one (e.g. public IP addresses, PIP-6). */
   sku?: { name: string; tier?: string }
+  /** Top-level ARM `kind`, for the types that have one (e.g. Application Insights `web`, MON-15). */
+  kind?: string
   /** ARM-named configuration. */
   properties: Record<string, unknown>
   /** ARM-1 values: `Succeeded`, or `Creating` / `Updating` / `Deleting` while a deployment runs (ARM-1s). */
@@ -147,24 +149,44 @@ export interface External {
 
 // ── EVIDENCE: bounded ───────────────────────────────────────────────────────────────────────────
 
+/**
+ * One availability test run, shaped like an `AppAvailabilityResults` row (MON-21, MON-27s). `webTestId`
+ * is the sim's link to the test resource.
+ */
 export interface AvailabilityResult {
-  time: number
-  location: string
-  success: boolean
-  durationMs: number
-  message: string
+  TimeGenerated: number
+  /** The test's `Name` property. */
+  Name: string
+  /** Display name of the test location (MON-18). */
+  Location: string
+  Success: boolean
+  DurationMs: number
+  Message: string
+  webTestId: ArmId
 }
 
 export interface Telemetry {
+  /** The newest test results across all availability tests (MON-27s). */
   availability: RingBuffer<AvailabilityResult>
   /** resource ID → metric name (MON-6 names) → [sim time, value] samples. */
   metrics: Record<ArmId, Record<string, RingBuffer<[number, number]>>>
 }
 
+/** A fired metric alert (MON-24, MON-28s). `monitorCondition` is set by the system; the user response stays New. */
 export interface FiredAlert {
+  id: string
   alertRuleId: ArmId
+  alertRuleName: string
+  severity: number
+  description: string
+  monitorCondition: 'Fired' | 'Resolved'
+  userResponse: 'New'
   firedAt: number
   resolvedAt?: number
+  /** Locations whose newest result had failed when it fired. */
+  failedLocations: string[]
+  /** Consecutive evaluations with the condition not met (three resolve it, MON-24). */
+  clearChecks: number
 }
 
 /** Capacity of each telemetry series: one day of one-minute samples. */

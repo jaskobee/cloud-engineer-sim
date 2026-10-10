@@ -33,3 +33,32 @@ export function checkResourceGroupName(name: string): Refusal | null {
   }
   return null
 }
+
+/** Log Analytics workspace (NAME-2): 4–63 alphanumerics and hyphens, starting and ending alphanumeric. */
+export function checkWorkspaceName(name: string): Refusal | null {
+  return /^[A-Za-z0-9][A-Za-z0-9-]{2,61}[A-Za-z0-9]$/.test(name)
+    ? null
+    : rule('NAME-2', 'Log Analytics workspace names are 4–63 letters, numbers and hyphens, and start and end with a letter or number.')
+}
+
+/** 1–260 characters, none of `forbidden` or control characters, not ending with a space or period. */
+function insightsName(ruleId: string, what: string, forbidden: string) {
+  return (name: string): Refusal | null => {
+    // eslint-disable-next-line no-control-regex
+    const bad = [...name].some(c => forbidden.includes(c) || /[\u0000-\u001f\u007f]/.test(c))
+    if (name.length < 1 || name.length > 260 || bad || /[ .]$/.test(name)) {
+      return rule(ruleId, `${what} names are 1–260 characters without ${forbidden.split('').join(' ')} or control characters, and can't end with a space or period.`)
+    }
+    return null
+  }
+}
+
+export const checkComponentName = insightsName('NAME-3', 'Application Insights', '%&\\?/')
+export const checkMetricAlertName = insightsName('NAME-4', 'Alert rule', '*#&+:<>?@%{}\\/|')
+
+/** Availability tests: Learn lists no rule (NAME-5u), so the sim only accepts a safe subset (NAME-5s). */
+export function checkWebTestName(name: string): Refusal | null {
+  return /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,62}[A-Za-z0-9])?$/.test(name)
+    ? null
+    : { kind: 'not-modelled', ruleId: 'NAME-5s', message: "Learn doesn't list the naming rule for availability tests, so the simulator only accepts 1–64 letters, numbers and hyphens, starting and ending with a letter or number." }
+}

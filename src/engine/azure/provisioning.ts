@@ -14,6 +14,11 @@ export const PROVISIONING_MS: Readonly<Record<string, number>> = {
   'arm/publicIPAddresses/write': 6_000,
   'arm/networkInterfaces/write': 6_000,
   'arm/virtualMachines/write': 90_000,
+  // Monitoring (MON-29s)
+  'arm/workspaces/write': 20_000,
+  'arm/components/write': 10_000,
+  'arm/webtests/write': 6_000,
+  'arm/metricAlerts/write': 6_000,
 }
 
 /** The handler, running as a deployment of its PROVISIONING_MS duration (ARM-12s) when it has one. */

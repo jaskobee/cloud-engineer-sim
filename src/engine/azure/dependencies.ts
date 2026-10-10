@@ -1,6 +1,7 @@
 import type { ArmId, World } from '../world.ts'
 import { armKey, parentResourceId } from './armId.ts'
 import { getResource, refId } from './common.ts'
+import { COMPONENT_TYPE, METRIC_ALERT_TYPE, metricAlertView, WEBTEST_TYPE, webTestView, workspaceOfComponent } from './monitoring.ts'
 import { ipConfigurationsOf, nicNsgId } from './networkInterfaces.ts'
 import { VM_TYPE, networkInterfacesOf } from './virtualMachines.ts'
 import { NIC_TYPE, SUBNET_TYPE } from './virtualNetworks.ts'
@@ -15,8 +16,12 @@ import { NIC_TYPE, SUBNET_TYPE } from './virtualNetworks.ts'
  * - `publicIPAddress`: a NIC's IP configuration and its public IP (PIP-8)
  * - `networkInterface`: a VM and its NICs (VM-16s)
  * - `osDisk`: a VM and its managed OS disk (VM-15s)
+ * - `workspace`: Application Insights and its Log Analytics workspace (MON-5, MON-15)
+ * - `component`: an availability test and its Application Insights (`hidden-link` tag, MON-17)
+ * - `webTest`: an availability alert rule and the test it watches (MON-22)
  */
 export type DependencyKind = 'parent' | 'networkSecurityGroup' | 'subnet' | 'publicIPAddress' | 'networkInterface' | 'osDisk'
+  | 'workspace' | 'component' | 'webTest'
 
 export interface Dependency {
   /** The dependent resource. */
@@ -56,6 +61,10 @@ export function dependenciesOf(world: World, id: ArmId): Dependency[] {
     const disk = (resource.properties.storageProfile as { osDisk?: { managedDisk?: { id?: string } } } | undefined)?.osDisk?.managedDisk?.id
     add(disk, 'osDisk')
   }
+
+  if (isType(resource.type, COMPONENT_TYPE)) add(workspaceOfComponent(resource), 'workspace')
+  if (isType(resource.type, WEBTEST_TYPE)) add(webTestView(resource).componentId, 'component')
+  if (isType(resource.type, METRIC_ALERT_TYPE)) add(metricAlertView(resource).webTestId, 'webTest')
   return out
 }
 

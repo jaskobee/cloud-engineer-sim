@@ -1,4 +1,5 @@
 import { activityLogRetention } from './activityLog.ts'
+import { alertSystem, availabilitySystem } from './azure/monitoring.ts'
 import { metricsSystem, trafficSystem } from './azure/traffic.ts'
 import { vmPowerSystem } from './azure/virtualMachines.ts'
 import { workloadHealthSystem } from './azure/workloads.ts'
@@ -22,7 +23,8 @@ export type System = (world: World, tick: Tick) => World
  * Each arrives with its step; housekeeping runs last.
  */
 export const SYSTEMS: readonly System[] = [
-  deploymentSystem, vmPowerSystem, workloadHealthSystem, trafficSystem, metricsSystem, activityLogRetention,
+  deploymentSystem, vmPowerSystem, workloadHealthSystem, trafficSystem, availabilitySystem, metricsSystem, alertSystem,
+  activityLogRetention,
 ]
 
 /**
