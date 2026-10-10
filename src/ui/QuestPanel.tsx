@@ -1,10 +1,11 @@
 import { useContext, useId, useMemo, useState } from 'react'
 import { ASSISTANCE_MODES, type AssistanceMode, type MissionMessage, type Refusal } from '../engine/index.ts'
-import { hintsUsed, infoTopic, INFO_TOPICS, judgeReport, MISSIONS, objectiveStatus, type MissionDef, type ObjectiveDef, type StageDef } from '../missions/index.ts'
+import { hintsUsed, infoTopic, INFO_TOPICS, judgeReport, levelFor, missionResult, MISSIONS, objectiveStatus, recordRun, runIdOf, type MissionDef, type ObjectiveDef, type StageDef } from '../missions/index.ts'
 import { formatSimTime } from './format.ts'
 import { GameStoreContext, useGame } from './gameContext.ts'
 import { InfoButton } from './Info.tsx'
 import { MODE_TEXT } from './modes.ts'
+import { browserStorage, readProfile } from '../store/persistence.ts'
 import { RefusalNotice } from './RefusalNotice.tsx'
 
 /**
@@ -215,14 +216,60 @@ function ReportForm({ def, mode }: { def: MissionDef; mode: AssistanceMode }) {
 }
 
 function Completion({ def }: { def: MissionDef }) {
+  const completedAt = useGame(s => s.world.mission?.completedAt)
   const hints = useGame(s => hintsUsed(s.world))
   const attempts = useGame(s => s.world.mission?.reportAttempts ?? 0)
   const mode = useGame(s => s.world.mission?.mode ?? 'guided')
+  const store = useContext(GameStoreContext)
+  // The result is taken once, when the mission completes; later changes to the world don't rewrite it.
+  const result = useMemo(() => (store && completedAt !== undefined ? missionResult(def, store.getState().world) : null), [def, store, completedAt])
+  const career = useMemo(() => {
+    if (!store || !result) return null
+    const world = store.getState().world
+    const runId = runIdOf(world)
+    const profile = runId ? recordRun(readProfile(browserStorage()), runId, { missionId: def.id, mode, xp: result.xp.total, badges: result.badges }) : null
+    return profile ? { ...levelFor(profile.xp), xp: profile.xp } : null
+  }, [store, result, def, mode])
   const last = def.stages.at(-1)
   return (
     <section className="quest-section quest-complete" aria-label="Mission complete">
       <p className="quest-complete-title">Mission complete</p>
       <p>{last?.goal}</p>
+      {result && (
+        <>
+          <h3 className="quest-heading">Architecture review</h3>
+          {result.review.map(d => (
+            <div key={d.dimension} className="review-dimension">
+              <p className="review-score"><span>{d.dimension}</span><span className="mono">{d.score} %</span></p>
+              <ul className="review-items">
+                {d.items.map(i => (
+                  <li key={i.id} className={i.ok ? 'is-ok' : 'is-miss'}>
+                    <span className="review-mark" aria-hidden="true">{i.ok ? '✓' : '✕'}</span>
+                    <span>
+                      {i.title}<span className="visually-hidden">{i.ok ? ' (passed)' : ' (missed)'}</span>
+                      <span className="review-why">{i.why} <span className="mono">{i.rules.join(' · ')}</span></span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <h3 className="quest-heading">Experience</h3>
+          <table className="xp-table">
+            <tbody>
+              {result.xp.lines.map(l => <tr key={l.label}><td>{l.label}</td><td className="mono">{l.xp > 0 ? '+' : ''}{l.xp}</td></tr>)}
+              {result.xp.multiplier !== 1 && <tr><td>{MODE_TEXT[mode].label} mode</td><td className="mono">× {result.xp.multiplier}</td></tr>}
+              <tr className="xp-total"><td>Total</td><td className="mono">{result.xp.total} XP</td></tr>
+            </tbody>
+          </table>
+          {result.badges.length > 0 && (
+            <p className="badges">
+              {result.badges.map(b => <span key={b} className="badge">{def.badges.find(x => x.id === b)?.title ?? b}</span>)}
+            </p>
+          )}
+          {career && <p className="career">Level {career.level}: {career.title} · {career.xp} XP</p>}
+        </>
+      )}
       <dl className="facts">
         <div><dt>Mode</dt><dd>{MODE_TEXT[mode].label}</dd></div>
         <div><dt>Hints opened</dt><dd>{hints}</dd></div>

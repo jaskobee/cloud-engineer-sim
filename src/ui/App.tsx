@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { ASSISTANCE_MODES, WORLD_SCHEMA_VERSION, type AssistanceMode, type LoadResult } from '../engine/index.ts'
-import { PIXELFORGE_LAUNCH_DAY, registryFor, startMission } from '../missions/index.ts'
+import { levelFor, MISSIONS, PIXELFORGE_LAUNCH_DAY, registryFor, startMission } from '../missions/index.ts'
 import { createGameStore, newWorld, type GameStore } from '../store/gameStore.ts'
-import { browserStorage, readSave } from '../store/persistence.ts'
+import { browserStorage, readProfile, readSave } from '../store/persistence.ts'
 import { formatSimTime } from './format.ts'
 import { GameStoreContext } from './gameContext.ts'
 import { MODE_TEXT } from './modes.ts'
@@ -16,6 +16,7 @@ export function App() {
   const [store, setStore] = useState<GameStore | null>(null)
   const [saved] = useState<LoadResult | null>(() => readSave(browserStorage()))
   const [mode, setMode] = useState<AssistanceMode>('guided')
+  const [profile] = useState(() => readProfile(browserStorage()))
 
   if (store) {
     return (
@@ -60,6 +61,8 @@ export function App() {
           </p>
         )}
 
+        {Object.keys(profile.runs).length > 0 && <Career profile={profile} />}
+
         <section className="ticket" aria-labelledby="mission-title">
           <div className="ticket-row">
             <span className="led led-green" aria-hidden="true" />
@@ -93,5 +96,22 @@ export function App() {
         <span className="mono">world schema v{WORLD_SCHEMA_VERSION}</span>
       </footer>
     </div>
+  )
+}
+
+/** The player's career across missions (MVP §11, §31). */
+function Career({ profile }: { profile: ReturnType<typeof readProfile> }) {
+  const { level, title, next } = levelFor(profile.xp)
+  const badgeTitle = (id: string) => Object.values(MISSIONS).flatMap(m => m.badges).find(b => b.id === id)?.title ?? id
+  const runs = Object.values(profile.runs)
+  return (
+    <section className="career-card" aria-label="Your career">
+      <p className="career-level">Level {level} · {title}</p>
+      <p className="hint">{profile.xp} XP · next level at {next} XP · {runs.length} mission{runs.length === 1 ? '' : 's'} completed</p>
+      <meter className="career-meter" min={0} max={next} value={profile.xp} aria-label="Progress to the next level" />
+      {profile.badges.length > 0 && (
+        <p className="badges">{profile.badges.map(b => <span key={b} className="badge">{badgeTitle(b)}</span>)}</p>
+      )}
+    </section>
   )
 }

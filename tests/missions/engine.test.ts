@@ -28,6 +28,8 @@ const TOY: MissionDef = {
   ],
   report: { rootCauses: [], evidence: [], lessons: [], minEvidence: 0 },
   certifications: [],
+  review: [],
+  badges: [],
 }
 
 const registry = registryFor(TOY)

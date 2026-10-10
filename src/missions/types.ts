@@ -121,4 +121,27 @@ export interface MissionDef {
   certifications: readonly string[]
   /** The connections to watch on the canvas, found by role in the current world. */
   watchedFlows?: (world: World) => MissionFlow[]
+  /** The architecture review shown at the end (MVP §32): graded items, each with the reason. */
+  review: readonly ReviewItemDef[]
+  badges: readonly BadgeDef[]
+}
+
+export type ReviewDimension = 'Security' | 'Reliability' | 'Observability'
+
+export interface ReviewItemDef {
+  id: string
+  dimension: ReviewDimension
+  title: string
+  /** Why it matters, shown whether it passed or not. */
+  why: string
+  rules: readonly string[]
+  check: (world: World) => boolean
+}
+
+export interface BadgeDef {
+  id: string
+  /** Badge names from MVP §31. */
+  title: string
+  description: string
+  earned: (world: World, passed: ReadonlySet<string>) => boolean
 }

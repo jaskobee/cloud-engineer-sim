@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { step } from '../../src/engine/index.ts'
 import { newWorld } from '../../src/store/gameStore.ts'
-import { SAVE_KEY, clearSave, readSave, writeSave, type KeyValueStorage } from '../../src/store/persistence.ts'
+import { PROFILE_KEY, SAVE_KEY, clearSave, readProfile, readSave, writeProfile, writeSave, type KeyValueStorage } from '../../src/store/persistence.ts'
+import { emptyProfile, recordRun } from '../../src/missions/index.ts'
 
 function memoryStorage(): KeyValueStorage & { data: Map<string, string> } {
   const data = new Map<string, string>()
@@ -48,5 +49,20 @@ describe('browser save slot', () => {
     expect(() => clearSave(throwing)).not.toThrow()
     expect(writeSave(null, newWorld('x'))).toBe(false)
     expect(readSave(null)).toBeNull()
+  })
+})
+
+describe('profile slot (step 11)', () => {
+  it('round-trips, falls back to an empty profile, and survives blocked storage', () => {
+    const storage = memoryStorage()
+    expect(readProfile(storage)).toEqual(emptyProfile())
+    const profile = recordRun(emptyProfile(), 'm:seed', { missionId: 'm', mode: 'guided', xp: 900, badges: ['b'] })
+    expect(writeProfile(storage, profile)).toBe(true)
+    expect(readProfile(storage)).toEqual(profile)
+    storage.data.set(PROFILE_KEY, '{"version":7}')
+    expect(readProfile(storage)).toEqual(emptyProfile())
+    expect(readProfile(throwing)).toEqual(emptyProfile())
+    expect(writeProfile(throwing, profile)).toBe(false)
+    expect(writeProfile(null, profile)).toBe(false)
   })
 })

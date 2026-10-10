@@ -244,6 +244,66 @@ const gameTests = (world: World) => {
 const green = (world: World, ms: number) => gameTests(world).some(t => greenFor(world, t, ms))
 const objective = (id: string) => (world: World) => OBJECTIVES.find(o => o.id === id)?.check(world).ok === true
 
+// ── The architecture review (MVP §32) ───────────────────────────────────────────────────────────
+
+const nsgOfSubnetOf = (world: World, vm: Resource | undefined): boolean => {
+  const nic = vm ? azure.primaryNicOf(world, vm) : undefined
+  const subnetId = nic ? azure.ipConfigurationsOf(nic)[0]?.properties.subnet.id : undefined
+  const subnet = subnetId ? azure.getResource(world, subnetId) : undefined
+  return !!subnet?.properties.networkSecurityGroup
+}
+
+/** A custom inbound rule that denies everything from the internet: it repeats DenyAllInbound (NSG-3). */
+const redundantDenies = (world: World) => azure.resourcesOfType(world, azure.SECURITY_RULE_TYPE).filter(r => {
+  const p = azure.ruleProperties(r)
+  return p.direction === 'Inbound' && p.access === 'Deny' && ['Internet', '*', '0.0.0.0/0'].includes(p.sourceAddressPrefix) && p.destinationPortRange === '*'
+})
+
+const REVIEW: MissionDef['review'] = [
+  { id: 'db-private', dimension: 'Security', title: 'The database has no public IP', why: 'Without a public IP the internet can\'t reach it at all.', rules: ['PIP-10'], check: objective('db-private') },
+  { id: 'db-only-game', dimension: 'Security', title: 'Only the game server reaches PostgreSQL', why: 'AllowVNetInBound would let everything in the virtual network in; your rules narrow it.', rules: ['NSG-3', 'NSG-1'], check: objective('db-only-game') },
+  { id: 'ssh-office', dimension: 'Security', title: 'SSH only from the office', why: 'Admin ports open to the internet get scanned constantly.', rules: ['NSG-1'], check: objective('ssh-office') },
+  { id: 'nothing-else-open', dimension: 'Security', title: 'Nothing else is open to the internet', why: 'Least exposure: only what players need, TCP 443.', rules: ['NSG-3'], check: objective('nothing-else-open') },
+  {
+    id: 'subnet-nsgs', dimension: 'Security', title: 'Both subnets have a network security group',
+    why: 'Associating NSGs with subnets is the recommended way: every VM added later is covered.', rules: ['NSG-12'],
+    check: world => nsgOfSubnetOf(world, gameVm(world)) && nsgOfSubnetOf(world, dbVm(world)),
+  },
+  {
+    id: 'no-redundant-deny', dimension: 'Security', title: 'No rule repeats DenyAllInbound',
+    why: 'DenyAllInbound (65500) already denies inbound traffic no rule allows. A copy with a low number is how the incident happened.', rules: ['NSG-3', 'NSG-1'],
+    check: world => redundantDenies(world).length === 0,
+  },
+  { id: 'players-https', dimension: 'Reliability', title: 'Players reach the game over HTTPS', why: 'The one thing the client sells.', rules: ['PIP-10s', 'NSG-7'], check: objective('players-https') },
+  { id: 'west-europe', dimension: 'Reliability', title: 'Everything in West Europe, near the players', why: 'A virtual network and its VMs live in one region; the players are in the EU.', rules: ['VNET-1', 'NIC-1'], check: objective('west-europe') },
+  { id: 'monitoring', dimension: 'Observability', title: 'An availability test and an alert watch the game', why: 'You hear about an outage before players do.', rules: ['MON-1', 'MON-4'], check: objective('monitoring') },
+  {
+    id: 'alert-threshold', dimension: 'Observability', title: 'The alert threshold follows the recommendation',
+    why: 'Alert when the number of locations minus 2 fail, with at least five locations.', rules: ['MON-23'],
+    check: world => gameTests(world).some(t => {
+      const n = azure.webTestView(t).locations.length
+      return n >= 5 && alertRulesFor(world, t).some(a => azure.metricAlertView(a).failedLocationCount === n - 2)
+    }),
+  },
+  {
+    id: 'alert-fired', dimension: 'Observability', title: 'The alert caught the incident',
+    why: 'An alert that fires when players can\'t get in is the point of monitoring.', rules: ['MON-24'],
+    check: world => world.alerts.fired.length > 0,
+  },
+]
+
+const BADGES: MissionDef['badges'] = [
+  { id: 'first-azure-deployment', title: 'First Azure Deployment', description: 'Took a client\'s workload live in Azure.', earned: () => true },
+  {
+    id: 'networking-foundations', title: 'Networking Foundations', description: 'Every security item in the review passed.',
+    earned: (_w, passed) => REVIEW.filter(r => r.dimension === 'Security').every(r => passed.has(r.id)),
+  },
+  {
+    id: 'incident-resolver', title: 'Incident Resolver', description: 'Fixed the incident and explained it right the first time.',
+    earned: world => (world.mission?.reportAttempts ?? 0) === 1 && judgeReport(REPORT, world.mission?.report).correct,
+  },
+]
+
 // ── The post-incident note ─────────────────────────────────────────────────────────────────────
 
 const REPORT: ReportDef = {
@@ -385,6 +445,8 @@ export const PIXELFORGE_LAUNCH_DAY: MissionDef = {
   ],
   report: REPORT,
   certifications: ['AZ-900', 'AZ-104', 'AZ-700'],
+  review: REVIEW,
+  badges: BADGES,
   watchedFlows: world => {
     const game = gameVm(world)
     if (!game) return []
