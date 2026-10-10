@@ -11,6 +11,11 @@ name: Azure QA
 on:
   push:
     branches: [main]
+    # Only pushes that can change what the game states or enforces about Azure.
+    paths:
+      - 'Docs/AZURE_FACTS.md'
+      - 'src/**'
+      - '.claude/agents/azure-qa.md'
   workflow_dispatch:
     inputs:
       scope:
