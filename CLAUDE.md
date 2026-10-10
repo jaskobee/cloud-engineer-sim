@@ -150,6 +150,22 @@ checks resolve it (`autoMitigate`). UI: create forms in `CreatePanel.tsx`, inspe
 (`AvailabilityPanel.tsx`: location × round grid as a table, newest results) and Alerts tab (`AlertsPanel.tsx`, badge
 when firing). Tests: `tests/engine/azure/monitoring.test.ts`, fixture `pixelForgeMonitored()`.
 
+## Mission engine (step 9)
+
+`src/missions/` is headless and deterministic like the engine (`tests/boundaries.test.ts`). A mission (`types.ts`) is
+data: client, ticket, actors, `setup` (client-provided resources as real commands), objectives (`check(world)` →
+`{ ok, detail }`, five-level hints, cited rules) and a stage machine. Each stage has triggers (effects that run once:
+a command dispatched like any NPC write, or a message) and a `completeWhen` condition. `missionSystem` runs after every
+other system each tick; `world.mission` keeps only what can't be derived (stage, when it started, fired triggers,
+messages, the player's report); objective status and report correctness are always derived (`objectiveStatus`,
+`judgeReport`). Commands: `mission/start`, `mission/submitReport` (game commands, not logged). `startMission(def, seed,
+registry)` builds the world; `runtimeFor(world)` gives the registry and systems the store and `advance` use. Checks in
+`checks.ts` read exposure and relationships through the flow evaluator (`inboundAllowed`, `exposure` is exact over all
+ports by testing one port per rule-boundary segment). Mission 1: `pixelforge-launch-day.ts` (BOOTSTRAP_REPORT §G):
+build → go-live (traffic on, 10 green minutes) → incident (Jonas's deny rule below the HTTPS allow, in the first NSG on
+the path) → fix (443 allowed, nothing else open, alert resolved, 10 green minutes) → post-incident note → complete.
+Tests: `tests/missions/` (`play.ts` builds designs; `pixelforge.test.ts` plays the whole mission headless).
+
 ## Working discipline
 
 - Small, reviewable steps (see `Docs/BOOTSTRAP_REPORT.md` §I). Finish each with `npm run check`.

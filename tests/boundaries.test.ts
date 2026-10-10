@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { engineViolations, importSpecifiers } from './support/engineBoundaries.ts'
 
 const ENGINE_DIR = path.resolve(import.meta.dirname, '../src/engine')
+const MISSIONS_DIR = path.resolve(import.meta.dirname, '../src/missions')
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
@@ -18,6 +19,15 @@ describe('engine boundaries', () => {
     const files = sourceFiles(ENGINE_DIR)
     expect(files.length).toBeGreaterThan(0)
     const problems = files.flatMap(f => engineViolations(f, readFileSync(f, 'utf8'), ENGINE_DIR))
+    expect(problems).toEqual([])
+  })
+})
+
+describe('mission boundaries', () => {
+  it('missions are headless and deterministic too: they may use the engine, nothing from the UI or store', () => {
+    const files = sourceFiles(MISSIONS_DIR)
+    expect(files.length).toBeGreaterThan(0)
+    const problems = files.flatMap(f => engineViolations(f, readFileSync(f, 'utf8'), MISSIONS_DIR, [MISSIONS_DIR, ENGINE_DIR]))
     expect(problems).toEqual([])
   })
 })

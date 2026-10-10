@@ -1,8 +1,6 @@
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import {
   advance,
-  azure,
-  createRegistry,
   createWorld,
   dispatch as dispatchCommand,
   dryRun,
@@ -13,6 +11,7 @@ import {
   type Registry,
   type World,
 } from '../engine/index.ts'
+import { registryFor, runtimeFor } from '../missions/index.ts'
 
 /** Who the player is in the activity log (`caller`, MON-9). Mission data may override it later. */
 export const PLAYER_PRINCIPAL = 'engineer@pixelforge.example'
@@ -97,7 +96,7 @@ export interface GameState {
 
 export type GameStore = StoreApi<GameState>
 
-const DEFAULT_REGISTRY = createRegistry(azure.AZURE_COMMANDS)
+const DEFAULT_REGISTRY = registryFor(undefined)
 
 /** A fresh sandbox world: empty apart from the sandbox subscription. Deterministic for a seed. */
 export function newWorld(seed: string): World {
@@ -110,72 +109,83 @@ export function newWorld(seed: string): World {
   return world
 }
 
-export function createGameStore({ world, registry = DEFAULT_REGISTRY }: { world: World; registry?: Registry }): GameStore {
-  return createStore<GameState>()((set, get) => ({
-    world,
-    session: {
-      missionId: null,
-      mode: 'guided',
-      ui: { bottomTab: 'activity-log', selectedId: null, creating: null, canvas: { layer: 'network', watched: [] } },
-    },
-    lastRefusal: null,
+/**
+ * The store for one game. Commands and time run with the world's runtime: the default registry and
+ * systems, plus its mission's commands and system when it has a mission (step 9). Tests may pass a
+ * registry of their own.
+ */
+export function createGameStore({ world, registry }: { world: World; registry?: Registry }): GameStore {
+  return createStore<GameState>()((set, get) => {
+    const runtime = () => {
+      const r = runtimeFor(get().world)
+      return registry ? { ...r, registry } : r
+    }
+    return {
+      world,
+      session: {
+        missionId: null,
+        mode: 'guided',
+        ui: { bottomTab: 'activity-log', selectedId: null, creating: null, canvas: { layer: 'network', watched: [] } },
+      },
+      lastRefusal: null,
 
-    dispatch(command) {
-      const { world: next, outcome } = dispatchCommand(get().world, registry, { ...command, caller: command.caller ?? PLAYER_PRINCIPAL })
-      set({ world: next, lastRefusal: outcome.status === 'refused' ? outcome.refusal : null })
-      return outcome
-    },
+      dispatch(command) {
+        const { world: next, outcome } = dispatchCommand(get().world, runtime().registry, { ...command, caller: command.caller ?? PLAYER_PRINCIPAL })
+        set({ world: next, lastRefusal: outcome.status === 'refused' ? outcome.refusal : null })
+        return outcome
+      },
 
-    check(command) {
-      return dryRun(get().world, registry, { ...command, caller: command.caller ?? PLAYER_PRINCIPAL })
-    },
+      check(command) {
+        return dryRun(get().world, runtime().registry, { ...command, caller: command.caller ?? PLAYER_PRINCIPAL })
+      },
 
-    tick(realMs) {
-      const current = get().world
-      const next = advance(current, realMs)
-      if (next !== current) set({ world: next })
-    },
+      tick(realMs) {
+        const current = get().world
+        const next = advance(current, realMs, runtime().systems)
+        if (next !== current) set({ world: next })
+      },
 
-    selectTab(tab) {
-      set(s => ({ session: { ...s.session, ui: { ...s.session.ui, bottomTab: tab } } }))
-    },
+      selectTab(tab) {
+        set(s => ({ session: { ...s.session, ui: { ...s.session.ui, bottomTab: tab } } }))
+      },
 
-    select(id) {
-      set(s => ({ session: { ...s.session, ui: { ...s.session.ui, selectedId: id, creating: id === null ? s.session.ui.creating : null } } }))
-    },
+      select(id) {
+        set(s => ({ session: { ...s.session, ui: { ...s.session.ui, selectedId: id, creating: id === null ? s.session.ui.creating : null } } }))
+      },
 
-    startCreate(request) {
-      set(s => ({ session: { ...s.session, ui: { ...s.session.ui, creating: request, selectedId: request ? null : s.session.ui.selectedId } } }))
-    },
+      startCreate(request) {
+        set(s => ({ session: { ...s.session, ui: { ...s.session.ui, creating: request, selectedId: request ? null : s.session.ui.selectedId } } }))
+      },
 
-    setCanvasLayer(layer) {
-      set(s => ({ session: { ...s.session, ui: { ...s.session.ui, canvas: { ...s.session.ui.canvas, layer } } } }))
-    },
+      setCanvasLayer(layer) {
+        set(s => ({ session: { ...s.session, ui: { ...s.session.ui, canvas: { ...s.session.ui.canvas, layer } } } }))
+      },
 
-    watchFlow(flow) {
-      const id = [flow.vmId.toLowerCase(), flow.direction, flow.protocol, flow.localPort, flow.remoteIp, flow.remotePort].join('|')
-      set(s => {
-        const { canvas } = s.session.ui
-        const watched = canvas.watched.some(w => w.id === id) ? canvas.watched : [...canvas.watched, { ...flow, id }]
-        return { session: { ...s.session, ui: { ...s.session.ui, creating: null, selectedId: `${FLOW_SELECTION_PREFIX}${id}`, canvas: { ...canvas, watched } } } }
-      })
-      return id
-    },
+      watchFlow(flow) {
+        const id = [flow.vmId.toLowerCase(), flow.direction, flow.protocol, flow.localPort, flow.remoteIp, flow.remotePort].join('|')
+        set(s => {
+          const { canvas } = s.session.ui
+          const watched = canvas.watched.some(w => w.id === id) ? canvas.watched : [...canvas.watched, { ...flow, id }]
+          return { session: { ...s.session, ui: { ...s.session.ui, creating: null, selectedId: `${FLOW_SELECTION_PREFIX}${id}`, canvas: { ...canvas, watched } } } }
+        })
+        return id
+      },
 
-    unwatchFlow(id) {
-      set(s => {
-        const { canvas, selectedId } = s.session.ui
-        return {
-          session: {
-            ...s.session,
-            ui: {
-              ...s.session.ui,
-              selectedId: selectedId === `${FLOW_SELECTION_PREFIX}${id}` ? null : selectedId,
-              canvas: { ...canvas, watched: canvas.watched.filter(w => w.id !== id) },
+      unwatchFlow(id) {
+        set(s => {
+          const { canvas, selectedId } = s.session.ui
+          return {
+            session: {
+              ...s.session,
+              ui: {
+                ...s.session.ui,
+                selectedId: selectedId === `${FLOW_SELECTION_PREFIX}${id}` ? null : selectedId,
+                canvas: { ...canvas, watched: canvas.watched.filter(w => w.id !== id) },
+              },
             },
-          },
-        }
-      })
-    },
-  }))
+          }
+        })
+      },
+    }
+  })
 }

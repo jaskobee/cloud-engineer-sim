@@ -36,9 +36,10 @@ export function importSpecifiers(source: string): string[] {
  * Violations of the engine rules for one file.
  * @param file      absolute path of the file
  * @param source    its contents
- * @param engineDir absolute path of src/engine
+ * @param engineDir absolute path of src/engine (or of the headless folder being checked)
+ * @param allowedDirs folders relative imports may reach; by default only `engineDir` itself
  */
-export function engineViolations(file: string, source: string, engineDir: string): string[] {
+export function engineViolations(file: string, source: string, engineDir: string, allowedDirs: readonly string[] = [engineDir]): string[] {
   const problems: string[] = []
   const rel = path.relative(engineDir, file)
 
@@ -47,8 +48,8 @@ export function engineViolations(file: string, source: string, engineDir: string
   for (const spec of importSpecifiers(source)) {
     if (spec.startsWith('.')) {
       const target = path.resolve(path.dirname(file), spec)
-      const inside = target === engineDir || target.startsWith(engineDir + path.sep)
-      if (!inside) problems.push(`${rel}: imports '${spec}', which is outside src/engine`)
+      const inside = allowedDirs.some(dir => target === dir || target.startsWith(dir + path.sep))
+      if (!inside) problems.push(`${rel}: imports '${spec}', which is outside ${allowedDirs.map(d => path.basename(d)).join(' and ')}`)
     } else if (FORBIDDEN_PACKAGES.some(re => re.test(spec))) {
       problems.push(`${rel}: imports UI package '${spec}'`)
     }

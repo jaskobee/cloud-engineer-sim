@@ -19,8 +19,8 @@ export type System = (world: World, tick: Tick) => World
 
 /**
  * Systems in the order they run each tick (bootstrap report §F):
- * deployments → runtime → traffic → availability probes → metrics → alerts → mission triggers.
- * Each arrives with its step; housekeeping runs last.
+ * deployments → runtime → traffic → availability probes → metrics → alerts → housekeeping.
+ * A running mission appends its own system after these (src/missions, step 9).
  */
 export const SYSTEMS: readonly System[] = [
   deploymentSystem, vmPowerSystem, workloadHealthSystem, trafficSystem, availabilitySystem, metricsSystem, alertSystem,
@@ -43,8 +43,11 @@ export function step(world: World, dt: number, systems: readonly System[] = SYST
   return w.clock.now === target ? w : { ...w, clock: { ...w.clock, now: target } }
 }
 
-/** Tick-loop entry point: real elapsed milliseconds, scaled by the clock speed. Paused → unchanged. */
-export function advance(world: World, realMs: number): World {
+/**
+ * Tick-loop entry point: real elapsed milliseconds, scaled by the clock speed. Paused → unchanged.
+ * A running mission passes its systems (the defaults plus its own, which runs last).
+ */
+export function advance(world: World, realMs: number, systems: readonly System[] = SYSTEMS): World {
   if (world.clock.paused) return world
-  return step(world, realMs * world.clock.speed)
+  return step(world, realMs * world.clock.speed, systems)
 }

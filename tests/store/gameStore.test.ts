@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { TICK_MS } from '../../src/engine/index.ts'
+import { SYSTEMS, TICK_MS } from '../../src/engine/index.ts'
+import { PIXELFORGE_LAUNCH_DAY, registryFor, runtimeFor, startMission } from '../../src/missions/index.ts'
 import { FLOW_SELECTION_PREFIX, PLAYER_PRINCIPAL, SANDBOX_SUBSCRIPTION, createGameStore, newWorld } from '../../src/store/gameStore.ts'
 
 const store = () => createGameStore({ world: newWorld('store-test') })
@@ -122,5 +123,20 @@ describe('canvas view state (D-5): view only, never the world', () => {
     const st = store()
     st.getState().setCanvasLayer('security')
     expect(st.getState().session.ui.canvas.layer).toBe('security')
+  })
+})
+
+describe('game store with a mission world (step 9)', () => {
+  it('uses the mission\'s commands and runs its system with time', () => {
+    const world = startMission(PIXELFORGE_LAUNCH_DAY, 'store-mission', registryFor(PIXELFORGE_LAUNCH_DAY))
+    const st = createGameStore({ world })
+    // The mission's own command is known (refused for a game reason, not as an unknown command).
+    expect(st.getState().dispatch({ type: 'mission/submitReport', payload: { rootCause: 'x', evidence: [], lesson: 'y' } }))
+      .toMatchObject({ status: 'refused', refusal: { code: 'mission/no-report-now' } })
+    expect(runtimeFor(world).systems).toHaveLength(SYSTEMS.length + 1)
+    st.getState().tick(TICK_MS)
+    expect(st.getState().world.mission?.stage).toBe('build')
+    // A sandbox world runs the default systems only.
+    expect(runtimeFor(newWorld('sandbox')).systems).toBe(SYSTEMS)
   })
 })

@@ -189,6 +189,43 @@ export interface FiredAlert {
   clearChecks: number
 }
 
+// ── MISSION: progress of the running mission (step 9) ───────────────────────────────────────────
+
+/** A message to the player from someone in the story (client, consultant, colleague). */
+export interface MissionMessage {
+  id: string
+  at: number
+  /** Actor id (`external.actors`). */
+  from: string
+  subject?: string
+  body: string
+}
+
+/** The player's post-incident note. Whether it's right is derived from the mission data. */
+export interface MissionReport {
+  rootCause: string
+  evidence: string[]
+  lesson: string
+  at: number
+}
+
+/**
+ * Where the running mission is. Only what can't be derived lives here: the stage and when it
+ * started, which triggers have fired, the messages sent and the player's report. Objective status is
+ * always computed from the world (CLAUDE.md rule 6).
+ */
+export interface MissionState {
+  id: string
+  stage: string
+  stageStartedAt: number
+  /** Trigger id (`<stage>/<trigger>`) → sim time it fired. */
+  fired: Record<string, number>
+  messages: MissionMessage[]
+  report?: MissionReport
+  reportAttempts: number
+  completedAt?: number
+}
+
 /** Capacity of each telemetry series: one day of one-minute samples. */
 export const TELEMETRY_CAPACITY = 1440
 
@@ -210,6 +247,8 @@ export interface World {
   activityLog: ActivityLogEntry[]
   telemetry: Telemetry
   alerts: { fired: FiredAlert[] }
+  /** The running mission, if any (step 9). Optional: sandbox worlds have none. */
+  mission?: MissionState
 }
 
 export interface WorldOptions {
