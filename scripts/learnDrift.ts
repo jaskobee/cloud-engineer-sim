@@ -57,17 +57,22 @@ export interface DriftReport {
   baseline: { key: string; url: string; now: string | null }[]
   /** The lock as it would be after this run (changed and baseline entries updated). */
   lock: Lock
+  /** The old lock plus only the newly cited pages: safe to record without re-verifying anything. */
+  baselineLock: Lock
 }
 
 export function compare(lock: Lock, results: readonly PageResult[]): DriftReport {
-  const report: DriftReport = { changed: [], broken: [], baseline: [], lock: { ...lock } }
+  const report: DriftReport = { changed: [], broken: [], baseline: [], lock: { ...lock }, baselineLock: { ...lock } }
   for (const r of results) {
     if (!r.ok) {
       report.broken.push({ key: r.key, url: r.url, status: r.status, error: r.error })
       continue
     }
     const before = lock[r.url]
-    if (!before) report.baseline.push({ key: r.key, url: r.url, now: r.updated })
+    if (!before) {
+      report.baseline.push({ key: r.key, url: r.url, now: r.updated })
+      report.baselineLock[r.url] = { key: r.key, url: r.url, updated: r.updated }
+    }
     else if (before.updated !== r.updated) report.changed.push({ key: r.key, url: r.url, was: before.updated, now: r.updated })
     report.lock[r.url] = { key: r.key, url: r.url, updated: r.updated }
   }

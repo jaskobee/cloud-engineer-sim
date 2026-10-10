@@ -33,11 +33,14 @@ describe('Learn drift check (QA layer 1)', () => {
     expect(r.baseline.map(b => b.key)).toEqual(['L-C'])
     expect(r.broken.map(b => b.key)).toEqual(['L-D'])
     expect(r.lock['https://b']?.updated).toBe('2026-09-01')
+    // Only newly cited pages go into the baseline lock; a changed page keeps its old date until re-verified.
+    expect(r.baselineLock['https://b']?.updated).toBe('2026-01-01')
+    expect(r.baselineLock['https://c']?.updated).toBe('2026-02-02')
   })
 
   it('names the rules to re-verify when a page changes', () => {
     expect(rulesCiting(FACTS, 'L-NSG')).toEqual(expect.arrayContaining(['NSG-1', 'NSG-3']))
-    const body = renderReport({ changed: [{ key: 'L-NSG', url: 'https://x', was: 'a', now: 'b' }], broken: [], baseline: [], lock: {} }, FACTS, 'run')
+    const body = renderReport({ changed: [{ key: 'L-NSG', url: 'https://x', was: 'a', now: 'b' }], broken: [], baseline: [], lock: {}, baselineLock: {} }, FACTS, 'run')
     expect(body).toContain('NSG-1')
   })
 })

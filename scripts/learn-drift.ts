@@ -4,6 +4,7 @@
  *   - learn-drift/report.md   issue body when pages changed or broke (absent when nothing to do)
  *   - learn-drift/lock.json   the lock as it would be after re-verification
  *   - learn-drift/summary.json counts, for the workflow
+ *   - learn-drift/baseline-lock.json the old lock plus newly cited pages only (recorded by the workflow)
  * `--update` also writes the new lock to Docs/learn-sources.lock.json (after you re-verified the rules).
  * Needs network access to learn.microsoft.com (GitHub runners have it).
  */
@@ -40,14 +41,19 @@ async function main() {
   }
   const report = compare(lock, results)
   mkdirSync(OUT, { recursive: true })
-  const sorted = Object.fromEntries(Object.entries(report.lock).sort(([a], [b]) => a.localeCompare(b)))
+  const sortLock = (l: Lock) => Object.fromEntries(Object.entries(l).sort(([a], [b]) => a.localeCompare(b)))
+  const sorted = sortLock(report.lock)
   writeFileSync(`${OUT}/lock.json`, `${JSON.stringify(sorted, null, 2)}\n`)
-  const summary = { sources: sources.length, changed: report.changed.length, broken: report.broken.length, baseline: report.baseline.length }
+  writeFileSync(`${OUT}/baseline-lock.json`, `${JSON.stringify(sortLock(report.baselineLock), null, 2)}\n`)
+  const undated = results.filter(r => r.ok && r.updated === null).map(r => r.key)
+  const summary = { sources: sources.length, changed: report.changed.length, broken: report.broken.length, baseline: report.baseline.length, undated }
   writeFileSync(`${OUT}/summary.json`, `${JSON.stringify(summary)}\n`)
   const runUrl = process.env.GITHUB_SERVER_URL ? `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}` : 'local run'
   if (report.changed.length || report.broken.length) writeFileSync(`${OUT}/report.md`, renderReport(report, markdown, runUrl))
   if (process.argv.includes('--update')) writeFileSync(LOCK, `${JSON.stringify(sorted, null, 2)}\n`)
-  console.log(`Learn drift: ${summary.sources} sources, ${summary.changed} changed, ${summary.broken} broken, ${summary.baseline} without a recorded date`)
+  const line = `Learn drift: ${summary.sources} sources, ${summary.changed} changed, ${summary.broken} broken, ${summary.baseline} newly recorded, ${undated.length} without a date${undated.length ? ` (${undated.join(', ')})` : ''}`
+  console.log(line)
+  if (process.env.GITHUB_ACTIONS) console.log(`::notice::${line}`)
   for (const c of report.changed) console.log(`  changed ${c.key}: ${c.was} -> ${c.now}`)
   for (const b of report.broken) console.log(`  broken  ${b.key}: ${b.error} ${b.url}`)
 }

@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write # records the dates of newly cited pages (never changed ones)
   issues: write
 
 concurrency:
@@ -43,6 +43,19 @@ jobs:
           name: learn-drift
           path: learn-drift/
           retention-days: 30
+
+      # A page cited for the first time was just verified by whoever added the rule: record its date.
+      # Changed dates are never recorded automatically; they wait for re-verification.
+      - name: Record dates of newly cited pages
+        if: github.ref == 'refs/heads/main'
+        run: |
+          if cmp -s learn-drift/baseline-lock.json Docs/learn-sources.lock.json; then exit 0; fi
+          cp learn-drift/baseline-lock.json Docs/learn-sources.lock.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Docs/learn-sources.lock.json
+          git commit -m "Learn drift: record the dates of newly cited Learn pages [skip ci]"
+          git push
 
       - name: Open or update the learn-drift issue
         if: hashFiles('learn-drift/report.md') != ''
