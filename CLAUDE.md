@@ -166,6 +166,18 @@ build → go-live (traffic on, 10 green minutes) → incident (Jonas's deny rule
 the path) → fix (443 allowed, nothing else open, alert resolved, 10 green minutes) → post-incident note → complete.
 Tests: `tests/missions/` (`play.ts` builds designs; `pixelforge.test.ts` plays the whole mission headless).
 
+## Quest panel, modes, hints, INFO (step 10)
+
+The start screen offers the mission ("Take the job", with Guided / Standard / Expert) or an empty sandbox.
+`QuestPanel.tsx` reads only the world: stages, goal, messages (unread = `session.ui.seenMessages`), objectives per mode
+(Guided: technical requirement + live check detail + next highlighted; Standard: acceptance criteria; Expert: a count),
+five-level hint ladders, the post-incident note (`mission/submitReport`, feedback from `judgeReport`), completion. Mode
+and opened hints are mission state (`mission/setMode`, `mission/revealHint`; `hintsUsed`). Mission-declared flows
+(`MissionDef.watchedFlows`, found by role) join the pinned ones in `useWatchedFlows()` (`src/ui/canvas/watched.ts`);
+parallel traffic edges get lanes. INFO: `src/missions/info.ts` (every paragraph cites AZURE_FACTS rules; wording only
+from those rules), `Info.tsx` (`InfoButton`, `InfoDialog` with the Learn sources), opened from the inspector type label,
+objectives and the Concepts list (`session.ui.info`).
+
 ## Working discipline
 
 - Small, reviewable steps (see `Docs/BOOTSTRAP_REPORT.md` §I). Finish each with `npm run check`.

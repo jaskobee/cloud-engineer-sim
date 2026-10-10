@@ -11,6 +11,7 @@ import { useMediaQuery } from './useMediaQuery.ts'
 import { GameStoreContext, useGame } from './gameContext.ts'
 import { TimeControls } from './TimeControls.tsx'
 import { QuestPanel } from './QuestPanel.tsx'
+import { InfoDialog } from './Info.tsx'
 import { MISSIONS } from '../missions/index.ts'
 
 /** React Flow is only loaded where the canvas is shown (wide screens), keeping the first load small. */
@@ -62,6 +63,7 @@ export function Workspace() {
       <section className="pane pane-bottom" aria-label="Tools">
         <BottomTools />
       </section>
+      <InfoDialog />
     </div>
   )
 }

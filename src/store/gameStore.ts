@@ -75,6 +75,8 @@ export interface Session {
     canvas: { layer: CanvasLayer; watched: WatchedFlow[] }
     /** Mission messages the player has seen; newer ones count as unread. */
     seenMessages: number
+    /** The INFO topic open in the INFO dialog, if any. */
+    info: string | null
   }
 }
 
@@ -100,6 +102,7 @@ export interface GameState {
   watchFlow(flow: Omit<WatchedFlow, 'id'>): string
   unwatchFlow(id: string): void
   markMessagesSeen(count: number): void
+  openInfo(topic: string | null): void
 }
 
 export type GameStore = StoreApi<GameState>
@@ -131,7 +134,7 @@ export function createGameStore({ world, registry }: { world: World; registry?: 
     return {
       world,
       session: {
-        ui: { bottomTab: 'activity-log', selectedId: null, creating: null, canvas: { layer: 'network', watched: [] }, seenMessages: 0 },
+        ui: { bottomTab: 'activity-log', selectedId: null, creating: null, canvas: { layer: 'network', watched: [] }, seenMessages: 0, info: null },
       },
       lastRefusal: null,
 
@@ -191,6 +194,10 @@ export function createGameStore({ world, registry }: { world: World; registry?: 
             },
           }
         })
+      },
+
+      openInfo(topic) {
+        set(s => ({ session: { ...s.session, ui: { ...s.session.ui, info: topic } } }))
       },
 
       markMessagesSeen(count) {

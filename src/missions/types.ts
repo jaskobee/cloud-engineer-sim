@@ -34,6 +34,8 @@ export interface ObjectiveDef {
   hints: readonly string[]
   /** AZURE_FACTS rules the objective teaches. */
   rules: readonly string[]
+  /** INFO topics (`info.ts`) that explain the concepts behind it. */
+  info: readonly string[]
 }
 
 export interface MessageDef {

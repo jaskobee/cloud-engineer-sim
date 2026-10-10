@@ -2057,3 +2057,150 @@ tr.rule-default td {
   padding-top: 12px;
   border-top: 1px solid var(--border);
 }
+
+/* ── INFO (step 10b) ─────────────────────────────────────────────────────────────────────── */
+
+.info-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  vertical-align: 1px;
+}
+
+.info-button > span[aria-hidden] {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-style: italic;
+  font-family: Georgia, serif;
+}
+
+.info-button:hover .info-button-label {
+  text-decoration: underline;
+}
+
+.objective-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  margin-top: 4px !important;
+}
+
+.objective-info .info-button {
+  margin-left: 0;
+}
+
+.concepts summary {
+  cursor: pointer;
+}
+
+.concept-list {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.concept-list .info-button {
+  margin-left: 0;
+}
+
+.info-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(80vh, 720px);
+  padding: 20px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.info-dialog::backdrop {
+  background: color-mix(in srgb, #000 40%, transparent);
+}
+
+.info-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: 0 12px;
+}
+
+.info-kicker {
+  grid-column: 1;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+}
+
+.info-head h2 {
+  grid-column: 1;
+  margin: 2px 0 8px;
+  font-size: 1.25rem;
+}
+
+.info-close {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  padding: 6px 12px;
+}
+
+.info-section h3 {
+  margin: 14px 0 4px;
+  font-size: 0.9rem;
+}
+
+.info-section p {
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+
+.info-rules {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.info-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.info-sources {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.info-sources p {
+  margin: 0 0 4px;
+}
+
+.info-sources ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.quest-section > .link-button,
+.hints > .link-button {
+  justify-self: start;
+  text-align: left;
+}

@@ -39,6 +39,7 @@ const NO_DB = fail('No VM runs PostgreSQL yet. Install it from the database VM\'
 const OBJECTIVES: ObjectiveDef[] = [
   {
     id: 'players-https',
+    info: ['public-ip', 'nsg', 'nsg-placement'],
     title: 'Players reach the game API over HTTPS',
     technical: 'The game API runs on a VM with a Standard public IP, and a network security group allows TCP 443 from Internet.',
     rules: ['PIP-10s', 'NSG-7', 'RUN-2s', 'RUN-4s'],
@@ -58,6 +59,7 @@ const OBJECTIVES: ObjectiveDef[] = [
   },
   {
     id: 'db-private',
+    info: ['public-ip'],
     title: 'The database is never reachable from the internet',
     technical: 'The PostgreSQL VM has no public IP address.',
     rules: ['PIP-10s'],
@@ -77,6 +79,7 @@ const OBJECTIVES: ObjectiveDef[] = [
   },
   {
     id: 'db-only-game',
+    info: ['nsg', 'subnet'],
     title: 'Only the game server talks to the database',
     technical: 'TCP 5432 to the database is allowed from the game server and denied from the rest of the virtual network.',
     rules: ['NSG-3', 'NSG-1', 'NSG-15'],
@@ -106,6 +109,7 @@ const OBJECTIVES: ObjectiveDef[] = [
   },
   {
     id: 'ssh-office',
+    info: ['nsg'],
     title: 'Admin SSH only from the office',
     technical: `TCP 22 to the game VM is allowed from ${OFFICE_IP} and from nowhere else on the internet.`,
     rules: ['NSG-1', 'NSG-11'],
@@ -127,6 +131,7 @@ const OBJECTIVES: ObjectiveDef[] = [
   },
   {
     id: 'nothing-else-open',
+    info: ['nsg', 'effective-security-rules'],
     title: 'Nothing else is open to the internet',
     technical: 'From the internet only TCP 443 reaches the game VM (plus TCP 22 from the office), and no other VM is reachable.',
     rules: ['NSG-3', 'PIP-10s'],
@@ -150,6 +155,7 @@ const OBJECTIVES: ObjectiveDef[] = [
   },
   {
     id: 'west-europe',
+    info: ['region', 'resource-group'],
     title: 'Everything runs in West Europe',
     technical: 'Every resource you create is in West Europe (alert rules are global).',
     rules: ['REG-1', 'VNET-1', 'NIC-1'],
@@ -169,6 +175,7 @@ const OBJECTIVES: ObjectiveDef[] = [
   },
   {
     id: 'monitoring',
+    info: ['application-insights', 'availability-test', 'alerts'],
     title: 'We hear about outages before players do',
     technical: 'A standard availability test checks the game API over HTTPS from at least five locations, and an alert rule watches it.',
     rules: ['MON-1', 'MON-2', 'MON-5', 'MON-23'],

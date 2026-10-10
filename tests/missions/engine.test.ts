@@ -13,7 +13,7 @@ const TOY: MissionDef = {
   actors: [{ id: 'npc', displayName: 'NPC', role: 'Tester', principalName: 'npc@toy.example' }],
   ticket: { from: 'npc', body: 'Hello' },
   setup: () => [],
-  objectives: [{ id: 'rg', title: 'A resource group exists', technical: '', rules: ['RG-1'], hints: [], check: w => ({ ok: !!w.tenant.resourceGroups[RG_ID.toLowerCase()], detail: '' }) }],
+  objectives: [{ id: 'rg', title: 'A resource group exists', technical: '', rules: ['RG-1'], info: [], hints: [], check: w => ({ ok: !!w.tenant.resourceGroups[RG_ID.toLowerCase()], detail: '' }) }],
   stages: [
     { id: 'one', title: '', goal: '', objectives: ['rg'], triggers: [], completeWhen: w => !!w.tenant.resourceGroups[RG_ID.toLowerCase()] },
     {

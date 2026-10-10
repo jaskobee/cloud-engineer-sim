@@ -1,8 +1,9 @@
 import { useContext, useId, useMemo, useState } from 'react'
 import { ASSISTANCE_MODES, type AssistanceMode, type MissionMessage, type Refusal } from '../engine/index.ts'
-import { hintsUsed, judgeReport, MISSIONS, objectiveStatus, type MissionDef, type ObjectiveDef, type StageDef } from '../missions/index.ts'
+import { hintsUsed, infoTopic, INFO_TOPICS, judgeReport, MISSIONS, objectiveStatus, type MissionDef, type ObjectiveDef, type StageDef } from '../missions/index.ts'
 import { formatSimTime } from './format.ts'
 import { GameStoreContext, useGame } from './gameContext.ts'
+import { InfoButton } from './Info.tsx'
 import { MODE_TEXT } from './modes.ts'
 import { RefusalNotice } from './RefusalNotice.tsx'
 
@@ -53,6 +54,7 @@ function MissionQuest({ def }: { def: MissionDef }) {
       {stage.objectives.length > 0 && <Objectives def={def} stage={stage} mode={mode} />}
       {stage.acceptsReport && <ReportForm def={def} mode={mode} />}
       {completed && <Completion def={def} />}
+      <Concepts />
       <ModeSwitch mode={mode} />
     </div>
   )
@@ -107,6 +109,9 @@ function Objectives({ def, stage, mode }: { def: MissionDef; stage: StageDef; mo
                 </p>
                 {mode === 'guided' && <p className="objective-technical">{o.technical}</p>}
                 {mode === 'guided' && s && <p className={`objective-detail ${done ? 'is-ok' : ''}`}>{s.detail}</p>}
+                <p className="objective-info">
+                  {o.info.map(t => <InfoButton key={t} topic={t} label={infoTopic(t)?.title ?? t} />)}
+                </p>
                 {!done && <Hints hintKey={o.id} hints={o.hints} mode={mode} compact />}
               </div>
             </li>
@@ -267,6 +272,18 @@ function Message({ message, isNew, open, from, epochMs }: {
         {message.body.split('\n\n').map((p, i) => <p key={i} className="message-body">{p}</p>)}
       </details>
     </li>
+  )
+}
+
+/** Every INFO topic, for looking things up (MVP §10). */
+function Concepts() {
+  return (
+    <details className="quest-section concepts">
+      <summary className="quest-heading">Concepts</summary>
+      <ul className="concept-list">
+        {INFO_TOPICS.map(t => <li key={t.id}><InfoButton topic={t.id} label={t.title} /></li>)}
+      </ul>
+    </details>
   )
 }
 

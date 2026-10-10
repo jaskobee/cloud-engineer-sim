@@ -6,6 +6,7 @@ import type { MissionDef } from './types.ts'
 export * from './types.ts'
 export * from './engine.ts'
 export * from './checks.ts'
+export * from './info.ts'
 export { PIXELFORGE_LAUNCH_DAY, OFFICE_IP } from './pixelforge-launch-day.ts'
 
 /** Every mission the game ships, by ID. */

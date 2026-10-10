@@ -4,6 +4,8 @@ import { useGame } from './gameContext.ts'
 import { RefusalNotice } from './RefusalNotice.tsx'
 import { SimulatedApp } from './SimulatedApp.tsx'
 import { typeLabel } from './resourceKinds.ts'
+import { InfoButton } from './Info.tsx'
+import { infoTopicForType } from '../missions/index.ts'
 
 /** Details of the selected resource group or resource, read from the same world as everything else. */
 export function Inspector({ id }: { id: ArmId }) {
@@ -16,7 +18,7 @@ export function Inspector({ id }: { id: ArmId }) {
     const count = Object.values(tenant.resources).filter(r => azure.sameName(azure.parseArmId(r.id)?.resourceGroupName ?? '', group.name)).length
     return (
       <div className="inspector">
-        <p className="inspector-type">Resource group</p>
+        <p className="inspector-type">Resource group <InfoButton topic="resource-group" /></p>
         <h2 className="inspector-name">{group.name}</h2>
         <Facts rows={[['Region', azure.regionDisplayName(group.location)], ['Resources', String(count)]]} />
         <IdLine id={group.id} />
@@ -27,7 +29,10 @@ export function Inspector({ id }: { id: ArmId }) {
 
   return (
     <div className="inspector">
-      <p className="inspector-type">{typeLabel(resource.type)}</p>
+      <p className="inspector-type">
+        {typeLabel(resource.type)}
+        {infoTopicForType(resource.type) && <InfoButton topic={infoTopicForType(resource.type) ?? ''} />}
+      </p>
       <h2 className="inspector-name">{resource.name}</h2>
       <Facts rows={[
         ['Resource group', parsed.resourceGroupName],
