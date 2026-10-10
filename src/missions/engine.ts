@@ -1,6 +1,6 @@
 import {
-  createWorld, dispatch, hasRunningDeployments, invalid, step, SYSTEMS, TICK_MS,
-  type CommandHandler, type MissionMessage, type MissionReport, type MissionState, type Registry, type System, type World,
+  ASSISTANCE_MODES, createWorld, dispatch, hasRunningDeployments, invalid, step, SYSTEMS, TICK_MS,
+  type AssistanceMode, type CommandHandler, type MissionMessage, type MissionReport, type MissionState, type Registry, type System, type World,
 } from '../engine/index.ts'
 import type { CheckResult, MessageDef, MissionContext, MissionDef, ReportDef, StageDef } from './types.ts'
 
@@ -60,18 +60,19 @@ export interface SubmitReport {
 
 /** The mission's own commands. Game commands, not Azure writes: no activity log entry. */
 export function missionCommands(def: MissionDef): CommandHandler[] {
-  const start: CommandHandler<{ missionId: string }> = {
+  const start: CommandHandler<{ missionId: string; mode?: AssistanceMode }> = {
     type: 'mission/start',
     write: () => null,
     validate: (world, { payload }) => {
       if (payload.missionId !== def.id) return invalid('mission/unknown', `Unknown mission '${payload.missionId}'.`)
+      if (payload.mode !== undefined && !ASSISTANCE_MODES.includes(payload.mode)) return invalid('mission/bad-mode', 'The mode is guided, standard or expert.')
       return world.mission ? invalid('mission/already-running', `Mission '${world.mission.id}' is already running.`) : null
     },
-    apply: (world) => {
+    apply: (world, { payload }) => {
       const first = def.stages[0]
       if (!first) return world
       const mission: MissionState = {
-        id: def.id, stage: first.id, stageStartedAt: world.clock.now, fired: {}, reportAttempts: 0,
+        id: def.id, stage: first.id, stageStartedAt: world.clock.now, fired: {}, reportAttempts: 0, mode: payload.mode ?? 'guided', hints: {},
         messages: [message('ticket', world.clock.now, def.ticket)],
       }
       return { ...world, mission, external: { ...world.external, actors: def.actors.map(a => ({ ...a })) } }
@@ -98,8 +99,42 @@ export function missionCommands(def: MissionDef): CommandHandler[] {
       return { ...world, mission: { ...mission, report, reportAttempts: mission.reportAttempts + 1 } }
     },
   }
-  return [start as CommandHandler, submitReport as CommandHandler]
+  const setMode: CommandHandler<{ mode: AssistanceMode }> = {
+    type: 'mission/setMode',
+    write: () => null,
+    validate: (world, { payload }) => {
+      if (world.mission?.id !== def.id) return invalid('mission/not-running', 'No mission is running.')
+      return ASSISTANCE_MODES.includes(payload.mode) ? null : invalid('mission/bad-mode', 'The mode is guided, standard or expert.')
+    },
+    apply: (world, { payload }) => (world.mission ? { ...world, mission: { ...world.mission, mode: payload.mode } } : world),
+  }
+
+  const revealHint: CommandHandler<{ key: string }> = {
+    type: 'mission/revealHint',
+    write: () => null,
+    validate: (world, { payload }) => {
+      if (world.mission?.id !== def.id) return invalid('mission/not-running', 'No mission is running.')
+      const ladder = hintLadder(def, payload.key)
+      if (!ladder) return invalid('mission/unknown-hint', `No hints for '${payload.key}'.`)
+      return (world.mission.hints[payload.key] ?? 0) < ladder.length ? null : invalid('mission/no-more-hints', 'That was the last hint.')
+    },
+    apply: (world, { payload }) => {
+      const mission = world.mission
+      if (!mission) return world
+      return { ...world, mission: { ...mission, hints: { ...mission.hints, [payload.key]: (mission.hints[payload.key] ?? 0) + 1 } } }
+    },
+  }
+  return [start as CommandHandler, submitReport as CommandHandler, setMode as CommandHandler, revealHint as CommandHandler]
 }
+
+/** The hints behind a ladder key: an objective ID, or `stage/<id>` for a stage's own ladder. */
+export function hintLadder(def: MissionDef, key: string): readonly string[] | undefined {
+  if (key.startsWith('stage/')) return def.stages.find(s => `stage/${s.id}` === key)?.hints
+  return def.objectives.find(o => o.id === key)?.hints
+}
+
+/** Hints the player has opened in total (Expert mode counts them, BOOTSTRAP_REPORT §G). */
+export const hintsUsed = (world: World): number => Object.values(world.mission?.hints ?? {}).reduce((n, h) => n + h, 0)
 
 // ── Time ───────────────────────────────────────────────────────────────────────────────────────
 
@@ -162,7 +197,7 @@ export const systemsFor = (def: MissionDef, registry: Registry): System[] => [..
  * (created through real operations by the client's people), then `mission/start`. Time runs until
  * the client's deployments are done, so the player starts in a settled world.
  */
-export function startMission(def: MissionDef, seed: string, registry: Registry): World {
+export function startMission(def: MissionDef, seed: string, registry: Registry, mode: AssistanceMode = 'guided'): World {
   const run = (w: World, type: string, caller: string, payload: unknown): World => {
     const { world, outcome } = dispatch(w, registry, { type, caller, payload })
     if (outcome.status !== 'accepted') throw new Error(`Mission setup '${type}' was refused: ${JSON.stringify(outcome.refusal)}`)
@@ -174,6 +209,6 @@ export function startMission(def: MissionDef, seed: string, registry: Registry):
     w = run(w, command.type, command.caller, command.payload)
     while (hasRunningDeployments(w)) w = step(w, TICK_MS)
   }
-  w = run(w, 'mission/start', SCENARIO, { missionId: def.id })
+  w = run(w, 'mission/start', SCENARIO, { missionId: def.id, mode })
   return step(w, TICK_MS, systemsFor(def, registry))
 }

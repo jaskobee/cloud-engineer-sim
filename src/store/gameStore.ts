@@ -25,7 +25,6 @@ export const SANDBOX_EPOCH_MS = Date.UTC(2026, 9, 16, 6, 0, 0)
  */
 export const SANDBOX_SUBSCRIPTION = { subscriptionId: '5a4d0b0c-0000-4000-8000-5a4d0b0c0001', displayName: 'Sandbox' } as const
 
-export type AssistanceMode = 'guided' | 'standard' | 'expert'
 /** Bottom panel tabs. Only tools that work are listed; more arrive with their steps. */
 export type BottomTab = 'activity-log' | 'deployments' | 'metrics' | 'availability' | 'alerts' | 'ip-flow-verify' | 'effective-rules'
 
@@ -53,21 +52,29 @@ export interface WatchedFlow {
   localPort: number
   remoteIp: string
   remotePort: number
+  /** What the connection is for, when a mission declares it (e.g. "Players → game API"). */
+  label?: string
+  /** Declared by the mission: always watched, can't be unpinned. */
+  fromMission?: boolean
 }
+
+/** A watched flow's ID: the same connection always gets the same ID, whoever watches it. */
+export const watchedFlowId = (flow: Omit<WatchedFlow, 'id'>): string =>
+  [flow.vmId.toLowerCase(), flow.direction, flow.protocol, flow.localPort, flow.remoteIp, flow.remotePort].join('|')
 
 /** Selection IDs for watched flows, so the inspector can show a flow like a resource. */
 export const FLOW_SELECTION_PREFIX = 'flow:'
 
-/** Everything that isn't the simulated world: what the player is looking at and how much help they get. */
+/** Everything that isn't the simulated world: what the player is looking at. (The mission's mode and hints are in the world.) */
 export interface Session {
-  missionId: string | null
-  mode: AssistanceMode
   ui: {
     bottomTab: BottomTab
     /** An ARM ID, or `flow:<id>` for a watched flow. */
     selectedId: ArmId | null
     creating: CreateRequest | null
     canvas: { layer: CanvasLayer; watched: WatchedFlow[] }
+    /** Mission messages the player has seen; newer ones count as unread. */
+    seenMessages: number
   }
 }
 
@@ -92,6 +99,7 @@ export interface GameState {
   /** Watch a connection on the canvas (the same connection twice is kept once) and select it. */
   watchFlow(flow: Omit<WatchedFlow, 'id'>): string
   unwatchFlow(id: string): void
+  markMessagesSeen(count: number): void
 }
 
 export type GameStore = StoreApi<GameState>
@@ -123,9 +131,7 @@ export function createGameStore({ world, registry }: { world: World; registry?: 
     return {
       world,
       session: {
-        missionId: null,
-        mode: 'guided',
-        ui: { bottomTab: 'activity-log', selectedId: null, creating: null, canvas: { layer: 'network', watched: [] } },
+        ui: { bottomTab: 'activity-log', selectedId: null, creating: null, canvas: { layer: 'network', watched: [] }, seenMessages: 0 },
       },
       lastRefusal: null,
 
@@ -162,7 +168,7 @@ export function createGameStore({ world, registry }: { world: World; registry?: 
       },
 
       watchFlow(flow) {
-        const id = [flow.vmId.toLowerCase(), flow.direction, flow.protocol, flow.localPort, flow.remoteIp, flow.remotePort].join('|')
+        const id = watchedFlowId(flow)
         set(s => {
           const { canvas } = s.session.ui
           const watched = canvas.watched.some(w => w.id === id) ? canvas.watched : [...canvas.watched, { ...flow, id }]
@@ -185,6 +191,11 @@ export function createGameStore({ world, registry }: { world: World; registry?: 
             },
           }
         })
+      },
+
+      markMessagesSeen(count) {
+        if (get().session.ui.seenMessages >= count) return
+        set(s => ({ session: { ...s.session, ui: { ...s.session.ui, seenMessages: count } } }))
       },
     }
   })

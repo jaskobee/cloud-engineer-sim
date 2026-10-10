@@ -1,6 +1,7 @@
 import { useContext } from 'react'
 import { useGame, GameStoreContext } from '../gameContext.ts'
 import { evaluateWatchedFlow, type Verdict } from './graph.ts'
+import { useWatchedFlows } from './watched.ts'
 
 const VERDICT_TEXT: Record<Verdict, string> = {
   allowed: 'Allowed', denied: 'Denied', 'not-modelled': 'Not modelled', unavailable: "Can't be checked right now",
@@ -11,7 +12,7 @@ const VERDICT_TEXT: Record<Verdict, string> = {
  * decided at each end (IP flow verify, NW-1), in the order traffic meets the NSGs (NSG-7).
  */
 export function FlowInspector({ flowId }: { flowId: string }) {
-  const flow = useGame(s => s.session.ui.canvas.watched.find(w => w.id === flowId))
+  const flow = useWatchedFlows().find(w => w.id === flowId)
   const unwatch = useGame(s => s.unwatchFlow)
   const select = useGame(s => s.select)
   // Re-evaluate when the tenant or runtime changes.
@@ -30,7 +31,8 @@ export function FlowInspector({ flowId }: { flowId: string }) {
 
   return (
     <div className="inspector">
-      <p className="pane-title">Watched connection</p>
+      <p className="pane-title">{flow.fromMission ? 'Connection the client depends on' : 'Watched connection'}</p>
+      {flow.label && <p className="inspector-type">{flow.label}</p>}
       <h2 className="inspector-name mono">{flow.protocol.toUpperCase()} {flow.direction === 'Inbound' ? flow.localPort : flow.remotePort}</h2>
       {!result && <p className="empty">The virtual machine for this connection no longer exists.</p>}
       {result && (
@@ -69,9 +71,11 @@ export function FlowInspector({ flowId }: { flowId: string }) {
           <p className="field-hint">The same evaluator answers IP flow verify, so both always agree.</p>
         </>
       )}
-      <div className="form-actions">
-        <button type="button" className="button" onClick={() => unwatch(flow.id)}>Stop watching</button>
-      </div>
+      {!flow.fromMission && (
+        <div className="form-actions">
+          <button type="button" className="button" onClick={() => unwatch(flow.id)}>Stop watching</button>
+        </div>
+      )}
     </div>
   )
 }

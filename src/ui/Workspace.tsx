@@ -10,6 +10,8 @@ import { FLOW_SELECTION_PREFIX } from '../store/gameStore.ts'
 import { useMediaQuery } from './useMediaQuery.ts'
 import { GameStoreContext, useGame } from './gameContext.ts'
 import { TimeControls } from './TimeControls.tsx'
+import { QuestPanel } from './QuestPanel.tsx'
+import { MISSIONS } from '../missions/index.ts'
 
 /** React Flow is only loaded where the canvas is shown (wide screens), keeping the first load small. */
 const ArchitectureCanvas = lazy(() => import('./canvas/ArchitectureCanvas.tsx').then(m => ({ default: m.ArchitectureCanvas })))
@@ -41,16 +43,13 @@ export function Workspace() {
       <header className="topbar">
         <div className="topbar-title">
           <span className="brand">Cloud Engineer Simulator</span>
-          <span className="topbar-context">Sandbox subscription, no client assigned yet</span>
+          <TopbarContext />
         </div>
         <TimeControls />
       </header>
 
       <aside className="pane pane-quest" aria-labelledby="quest-title">
-        <h2 id="quest-title" className="pane-title">Ticket</h2>
-        <p className="empty">
-          No ticket yet. Client tickets land here with what the client needs, what's done and what's next.
-        </p>
+        <QuestPanel />
       </aside>
 
       <main className="pane pane-canvas" aria-labelledby="canvas-title">
@@ -65,6 +64,12 @@ export function Workspace() {
       </section>
     </div>
   )
+}
+
+function TopbarContext() {
+  const missionId = useGame(s => s.world.mission?.id ?? null)
+  const def = missionId ? MISSIONS[missionId] : undefined
+  return <span className="topbar-context">{def ? `${def.client.name} · ${def.title}` : 'Sandbox subscription, no client assigned yet'}</span>
 }
 
 function CanvasBody() {

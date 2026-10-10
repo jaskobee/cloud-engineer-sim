@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { azure, loadWorld, saveWorld, type World } from '../../src/engine/index.ts'
-import { judgeReport, OFFICE_IP, SOME_INTERNET_IP } from '../../src/missions/index.ts'
+import { hintLadder, hintsUsed, judgeReport, OFFICE_IP, SOME_INTERNET_IP, startMission } from '../../src/missions/index.ts'
 import {
-  act, ALTERNATIVE, begin, build, failing, INTENDED, MINUTE, MISSION, objective, refusal, run, runUntil, stage, SUB, type Design,
+  act, ALTERNATIVE, begin, build, failing, INTENDED, MINUTE, MISSION, objective, PLAYER, refusal, registry, run, runUntil, stage, SUB, type Design,
 } from './play.ts'
 
 const JONAS = 'jonas@contoso-security.example'
@@ -197,5 +197,37 @@ describe('PixelForge: Launch Day — designs the client rejects', () => {
     const w = variant({ locations: INTENDED.locations.slice(0, 3) })
     expect(objective(w, 'monitoring')?.detail).toContain('five locations')
     expect(stage(w)).toBe('build')
+  })
+})
+
+describe('PixelForge: Launch Day — modes, hints and watched flows (step 10)', () => {
+  it('the mode is chosen at the start and can change; hints open one at a time and are counted', () => {
+    let w = startMission(MISSION, 'modes', registry, 'expert')
+    expect(w.mission).toMatchObject({ mode: 'expert', hints: {} })
+    w = act(w, 'mission/setMode', { mode: 'standard' })
+    expect(w.mission?.mode).toBe('standard')
+    expect(refusal(w, 'mission/setMode', { mode: 'easy' })).toMatchObject({ code: 'mission/bad-mode' })
+
+    for (let i = 0; i < 5; i++) w = act(w, 'mission/revealHint', { key: 'players-https' })
+    expect(w.mission?.hints['players-https']).toBe(5)
+    expect(refusal(w, 'mission/revealHint', { key: 'players-https' })).toMatchObject({ code: 'mission/no-more-hints' })
+    w = act(w, 'mission/revealHint', { key: 'stage/incident' })
+    expect(hintLadder(MISSION, 'stage/incident')?.[0]).toContain('only new connections fail')
+    expect(hintsUsed(w)).toBe(6)
+    expect(refusal(w, 'mission/revealHint', { key: 'stage/build' })).toMatchObject({ code: 'mission/unknown-hint' })
+    // Mode and hints are game commands: nothing in the activity log.
+    expect(w.activityLog.every(e => e.caller !== PLAYER)).toBe(true)
+  })
+
+  it('declares the flows the client depends on, found by role, and the flow evaluator decides them', () => {
+    expect(MISSION.watchedFlows?.(begin())).toEqual([])
+    const { world, vmGame } = build(begin(), INTENDED)
+    const flows = MISSION.watchedFlows?.(world) ?? []
+    expect(flows.map(f => [f.label, f.direction, f.localPort, f.remotePort])).toEqual([
+      ['Players → game API', 'Inbound', 443, 50000],
+      ['Office → SSH', 'Inbound', 22, 50000],
+      ['Game API → database', 'Outbound', 50000, 5432],
+    ])
+    expect(flows.every(f => f.vmId === vmGame)).toBe(true)
   })
 })

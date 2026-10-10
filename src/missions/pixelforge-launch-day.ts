@@ -4,7 +4,7 @@ import {
   SOME_INTERNET_IP, subnetPrefixOf, vms, vmsRunning,
 } from './checks.ts'
 import { allObjectivesMet, judgeReport } from './engine.ts'
-import type { CheckResult, Condition, MissionDef, ObjectiveDef, ReportDef } from './types.ts'
+import type { CheckResult, Condition, MissionDef, MissionFlow, ObjectiveDef, ReportDef } from './types.ts'
 
 /**
  * Mission 1, "PixelForge: Launch Day" (VM edition). Design: Docs/BOOTSTRAP_REPORT.md §G. Every check
@@ -330,6 +330,14 @@ export const PIXELFORGE_LAUNCH_DAY: MissionDef = {
       title: 'Incident',
       goal: 'Something is wrong. Find out what, and fix it.',
       objectives: [],
+      // BOOTSTRAP_REPORT §G, hint ladder R1.
+      hints: [
+        'People already playing are fine, only new connections fail. What kind of change affects only new connections?',
+        'Did anything change on the network just before the first failures? Check the Activity log.',
+        'Test TCP 443 from the internet to the game VM with IP flow verify.',
+        'NSG rules are processed by priority: lowest number first, and processing stops at the first match.',
+        'Delete the new deny rule. DenyAllInbound already blocks everything you haven\'t explicitly allowed.',
+      ],
       triggers: [
         { id: 'hardening', effects: [{ kind: 'command', command: hardening }] },
         {
@@ -370,4 +378,16 @@ export const PIXELFORGE_LAUNCH_DAY: MissionDef = {
   ],
   report: REPORT,
   certifications: ['AZ-900', 'AZ-104', 'AZ-700'],
+  watchedFlows: world => {
+    const game = gameVm(world)
+    if (!game) return []
+    const flows: MissionFlow[] = [
+      { label: 'Players → game API', vmId: game.id, direction: 'Inbound', protocol: 'Tcp', localPort: 443, remoteIp: SOME_INTERNET_IP, remotePort: 50000 },
+      { label: 'Office → SSH', vmId: game.id, direction: 'Inbound', protocol: 'Tcp', localPort: 22, remoteIp: OFFICE_IP, remotePort: 50000 },
+    ]
+    const db = dbVm(world)
+    const dbNic = db ? azure.primaryNicOf(world, db) : undefined
+    if (dbNic) flows.push({ label: 'Game API → database', vmId: game.id, direction: 'Outbound', protocol: 'Tcp', localPort: 50000, remoteIp: azure.privateIpOf(dbNic), remotePort: 5432 })
+    return flows
+  },
 }

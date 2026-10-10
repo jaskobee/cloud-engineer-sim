@@ -74,6 +74,8 @@ export interface CanvasEdge {
   reason?: string
   /** Short verdict text for the line's label: "Allowed", "Denied by <rule>", "Not modelled", "Unavailable". */
   summary?: string
+  /** What the connection is for, when a mission declares it. */
+  title?: string
 }
 
 export interface CanvasGraph {
@@ -413,7 +415,7 @@ export function buildCanvasGraph(world: World, watched: readonly WatchedFlow[]):
     if (!e || !drawn.has(e.source) || !drawn.has(e.target)) continue
     edges.push({
       id: `flow:${flow.id}`, kind: 'traffic', source: e.source, target: e.target, label: e.label,
-      flowId: flow.id, verdict: e.verdict, reason: e.reason, summary: e.summary,
+      flowId: flow.id, verdict: e.verdict, reason: e.reason, summary: e.summary, ...(flow.label ? { title: flow.label } : {}),
     })
   }
 

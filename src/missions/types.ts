@@ -69,6 +69,22 @@ export interface StageDef {
   completeWhen?: Condition
   /** The player can send the post-incident note in this stage. */
   acceptsReport?: boolean
+  /** A hint ladder for the stage itself (e.g. the incident), direction → exact step. */
+  hints?: readonly string[]
+}
+
+/**
+ * A connection the client depends on, drawn on the canvas (visual-infrastructure skill, D-5). Seen from
+ * `vmId`'s primary NIC, in IP flow verify's terms (NW-1).
+ */
+export interface MissionFlow {
+  label: string
+  vmId: string
+  direction: 'Inbound' | 'Outbound'
+  protocol: 'Tcp' | 'Udp'
+  localPort: number
+  remoteIp: string
+  remotePort: number
 }
 
 export interface ReportOption {
@@ -101,4 +117,6 @@ export interface MissionDef {
   stages: readonly StageDef[]
   report: ReportDef
   certifications: readonly string[]
+  /** The connections to watch on the canvas, found by role in the current world. */
+  watchedFlows?: (world: World) => MissionFlow[]
 }

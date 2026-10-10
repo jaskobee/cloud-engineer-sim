@@ -172,6 +172,58 @@ body {
   background: var(--state-warn);
 }
 
+.led-green {
+  background: var(--state-ok);
+}
+
+.ticket .start-actions {
+  margin-top: 16px;
+}
+
+.mode-pick {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 8px;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.mode-pick legend {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.mode-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.mode-option.is-selected {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.mode-option input {
+  grid-row: span 2;
+  margin: 3px 0 0;
+  accent-color: var(--accent);
+}
+
+.mode-label {
+  font-weight: 600;
+}
+
+.ticket .mode-blurb {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
 @media (max-width: 480px) {
   .shell-header,
   .shell-footer {
@@ -1688,4 +1740,320 @@ tr.rule-default td {
   width: 16px;
   height: 16px;
   accent-color: var(--accent);
+}
+
+
+/* ── Quest panel (step 10) ──────────────────────────────────────────────────────────────── */
+
+.quest {
+  display: grid;
+  gap: 14px;
+}
+
+.quest-client {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.quest-title {
+  margin: -8px 0 0;
+  font-size: 1.1rem;
+}
+
+.quest-stages {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.quest-stages li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quest-stage-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.quest-stages .is-done .quest-stage-mark {
+  border-color: var(--state-ok);
+  color: var(--state-ok);
+}
+
+.quest-stages .is-current {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.quest-stages .is-current .quest-stage-mark {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.quest-goal {
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.quest-goal p {
+  margin: 0;
+}
+
+.quest-goal-title {
+  font-weight: 600;
+  margin-bottom: 4px !important;
+}
+
+.quest-section {
+  display: grid;
+  gap: 8px;
+}
+
+.quest-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.quest-count {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+
+.objectives {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.objective {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.objective.is-next {
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.objective-mark {
+  color: var(--text-muted);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.objective.is-done .objective-mark {
+  color: var(--state-ok);
+}
+
+.objective-body p {
+  margin: 0;
+}
+
+.objective-title {
+  font-weight: 550;
+  line-height: 1.4;
+}
+
+.objective.is-done .objective-title {
+  color: var(--text-muted);
+}
+
+.objective-next {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.7rem;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+
+.objective-technical,
+.objective-detail {
+  margin-top: 4px !important;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.objective-detail {
+  padding-left: 8px;
+  border-left: 2px solid var(--state-warn);
+}
+
+.objective-detail.is-ok {
+  border-left-color: var(--state-ok);
+}
+
+.hints.is-compact {
+  margin-top: 6px;
+}
+
+.hint-list {
+  margin: 0 0 4px;
+  padding-left: 20px;
+  font-size: 0.85rem;
+}
+
+.hint-list li + li {
+  margin-top: 4px;
+}
+
+.report-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.report-group legend {
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.report-group .check {
+  align-items: flex-start;
+  font-size: 0.875rem;
+}
+
+.report-group .check input {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.report-feedback {
+  padding: 8px 12px;
+  border-left: 3px solid var(--state-warn);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--state-warn) 10%, transparent);
+  font-size: 0.875rem;
+}
+
+.report-feedback p,
+.report-feedback ul {
+  margin: 0;
+}
+
+.report-feedback ul {
+  padding-left: 18px;
+}
+
+.report-feedback-title {
+  font-weight: 600;
+}
+
+.quest-complete {
+  padding: 12px;
+  border-left: 3px solid var(--state-ok);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--state-ok) 9%, transparent);
+}
+
+.quest-complete p {
+  margin: 0;
+}
+
+.quest-complete-title {
+  font-weight: 650;
+}
+
+.inbox {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.message {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.message.is-new {
+  border-color: var(--accent);
+}
+
+.message summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.message summary::-webkit-details-marker {
+  display: none;
+}
+
+.message-subject {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.message-new {
+  align-self: start;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.message-meta {
+  grid-column: 1 / -1;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.message-role {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.message-body {
+  margin: 8px 0 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.quest-mode {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
 }

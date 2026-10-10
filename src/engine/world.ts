@@ -209,6 +209,10 @@ export interface MissionReport {
   at: number
 }
 
+/** How much help the player gets (BOOTSTRAP_REPORT §G, MVP §9). */
+export type AssistanceMode = 'guided' | 'standard' | 'expert'
+export const ASSISTANCE_MODES: readonly AssistanceMode[] = ['guided', 'standard', 'expert']
+
 /**
  * Where the running mission is. Only what can't be derived lives here: the stage and when it
  * started, which triggers have fired, the messages sent and the player's report. Objective status is
@@ -223,6 +227,9 @@ export interface MissionState {
   messages: MissionMessage[]
   report?: MissionReport
   reportAttempts: number
+  mode: AssistanceMode
+  /** Hint ladder key (objective ID or `stage/<id>`) → how many hints the player has opened. */
+  hints: Record<string, number>
   completedAt?: number
 }
 

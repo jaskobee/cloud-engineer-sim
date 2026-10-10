@@ -8,6 +8,7 @@ import { GameStoreContext, useGame } from '../gameContext.ts'
 import { TrafficEdge } from './CanvasEdges.tsx'
 import { BoxNode, CardNode, type BoxFlowNode, type CardFlowNode } from './CanvasNodes.tsx'
 import { buildCanvasGraph, type CanvasGraph } from './graph.ts'
+import { useWatchedFlows } from './watched.ts'
 
 /**
  * The architecture canvas (step 7). It only renders `buildCanvasGraph`: every box, card and line is
@@ -31,7 +32,7 @@ const LAYERS: { id: CanvasLayer; label: string }[] = [
 function useCanvasGraph(): CanvasGraph {
   const tenant = useGame(s => s.world.tenant)
   const runtime = useGame(s => s.world.runtime)
-  const watched = useGame(s => s.session.ui.canvas.watched)
+  const watched = useWatchedFlows()
   const store = useContext(GameStoreContext)
   return useMemo(() => {
     if (!store) throw new Error('No game store')
@@ -58,7 +59,7 @@ export function ArchitectureCanvas() {
   const selectedId = useGame(s => s.session.ui.selectedId)
   const select = useGame(s => s.select)
   const startCreate = useGame(s => s.startCreate)
-  const watchedCount = useGame(s => s.session.ui.canvas.watched.length)
+  const watchedCount = useWatchedFlows().length
   const selectedKey = selectedId?.toLowerCase() ?? null
 
   const { nodes, edges, resourceOf } = useMemo(() => {
@@ -84,11 +85,15 @@ export function ArchitectureCanvas() {
         ariaLabel: `${node.typeLabel} ${node.title}${node.status.text ? `, ${node.status.text}` : ''}`,
       }
     })
+    const lanes = new Map<string, number>()
     const edges: Edge[] = graph.edges.flatMap(e => {
       const a = rects.get(e.source)
       const b = rects.get(e.target)
       if (!a || !b) return []
       const traffic = e.kind === 'traffic'
+      const pair = [e.source, e.target].sort().join('|')
+      const lane = traffic ? lanes.get(pair) ?? 0 : 0
+      if (traffic) lanes.set(pair, lane + 1)
       return [{
         id: e.id, source: e.source, target: e.target, ...handlesFor(a, b), zIndex: EDGE_Z, type: traffic ? 'traffic' : 'straight',
         ...(traffic ? {} : { label: e.label }),
@@ -96,8 +101,8 @@ export function ArchitectureCanvas() {
         ...(traffic ? { markerEnd: { type: MarkerType.ArrowClosed, width: 18, height: 18 } } : {}),
         selectable: traffic,
         selected: traffic && selectedId === `${FLOW_SELECTION_PREFIX}${e.flowId}`,
-        ariaLabel: traffic ? `Connection ${e.label}: ${e.reason ?? ''}` : `${e.label}`,
-        data: traffic ? { label: e.label, summary: e.summary ?? '', verdict: e.verdict ?? 'unavailable' } : {},
+        ariaLabel: traffic ? `Connection ${e.title ?? e.label}: ${e.reason ?? ''}` : `${e.label}`,
+        data: traffic ? { label: e.label, summary: e.summary ?? '', verdict: e.verdict ?? 'unavailable', lane } : {},
       } satisfies Edge]
     })
     return { nodes: [...boxes, ...cards], edges, resourceOf }
