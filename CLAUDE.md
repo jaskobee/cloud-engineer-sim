@@ -136,6 +136,20 @@ names, one sample per sim minute for running VMs). Service state lives in `world
 canvas cards, Metrics tab (`MetricsPanel.tsx`, dataviz rules: one axis per chart, crosshair, keyboard, table).
 Tests: `tests/engine/azure/runtime.test.ts`, fixtures `pixelForge()` / `pixelForgeWithApps()`.
 
+## Monitoring: Application Insights, availability tests, alerts (step 8b)
+
+`src/engine/azure/monitoring.ts` (MON-5, MON-14..MON-29s): `arm/workspaces/write` (PerGB2018, 30 days),
+`arm/components/write` (workspace-based only, `kind` web), `arm/webtests/write` (standard tests linked by the
+`hidden-link:{component}` tag; URL must be an IPv4 address, no DNS in the sim), `arm/metricAlerts/write`
+(`WebtestLocationAvailabilityCriteria`, `location` global). `availabilitySystem` runs each location once per
+`Frequency`, staggered; `runTest` decides every run with `ipFlowVerify` from the location's made-up 192.0.2.x address
+plus the simulated app (game API up → 200, degraded → 503, blocked → timeout). Rows are `AppAvailabilityResults`-shaped
+in `world.telemetry.availability`; the Availability metric is derived (`availabilityPercent`). `alertSystem` evaluates
+on `evaluationFrequency`: failed locations ≥ `failedLocationCount` fires one alert in `world.alerts.fired`, three clear
+checks resolve it (`autoMitigate`). UI: create forms in `CreatePanel.tsx`, inspector details, Availability tab
+(`AvailabilityPanel.tsx`: location × round grid as a table, newest results) and Alerts tab (`AlertsPanel.tsx`, badge
+when firing). Tests: `tests/engine/azure/monitoring.test.ts`, fixture `pixelForgeMonitored()`.
+
 ## Working discipline
 
 - Small, reviewable steps (see `Docs/BOOTSTRAP_REPORT.md` §I). Finish each with `npm run check`.

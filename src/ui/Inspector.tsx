@@ -31,7 +31,7 @@ export function Inspector({ id }: { id: ArmId }) {
       <h2 className="inspector-name">{resource.name}</h2>
       <Facts rows={[
         ['Resource group', parsed.resourceGroupName],
-        ['Region', azure.regionDisplayName(resource.location)],
+        ['Region', resource.location === 'global' ? 'Global' : azure.regionDisplayName(resource.location)],
         ['Provisioning state', resource.provisioningState],
         ['Created by', resource.createdBy],
       ]} />
@@ -191,9 +191,120 @@ function TypeDetails({ tenant, resource }: { tenant: Tenant; resource: Resource 
           ['Attached to', nameOf(tenant, String(p.managedBy))],
         ]} />
       )
+    case azure.WORKSPACE_TYPE.toLowerCase(): {
+      const components = of(tenant, azure.COMPONENT_TYPE).filter(c => azure.sameName(azure.workspaceOfComponent(c) ?? '', resource.id))
+      return (
+        <Facts rows={[
+          ['Pricing tier', String((p.sku as { name?: string } | undefined)?.name ?? '')],
+          ['Retention', `${String(p.retentionInDays)} days (Application Insights tables: 90)`],
+          ['Application Insights', components.map(c => c.name).join(', ') || 'None'],
+        ]} />
+      )
+    }
+    case azure.COMPONENT_TYPE.toLowerCase(): {
+      const tests = of(tenant, azure.WEBTEST_TYPE).filter(t => azure.sameName(azure.webTestView(t).componentId ?? '', resource.id))
+      return (
+        <>
+          <Facts rows={[
+            ['Application type', String(p.Application_Type)],
+            ['Log Analytics workspace', nameOf(tenant, azure.workspaceOfComponent(resource))],
+            ['Availability tests', tests.map(t => t.name).join(', ') || 'None'],
+          ]} />
+          <div className="inspector-actions">
+            <button type="button" className="button" onClick={() => startCreate({ kind: 'webTest', preset: { componentId: resource.id } })}>Add an availability test</button>
+          </div>
+        </>
+      )
+    }
+    case azure.WEBTEST_TYPE.toLowerCase():
+      return <WebTestDetails tenant={tenant} test={resource} />
+    case azure.METRIC_ALERT_TYPE.toLowerCase():
+      return <AlertRuleDetails tenant={tenant} alertRule={resource} />
     default:
       return null
   }
+}
+
+const groupOf = (r: Resource) => {
+  const parsed = azure.parseArmId(r.id)
+  return `${parsed?.subscriptionId ?? ''}|${parsed?.resourceGroupName ?? ''}`
+}
+
+/** A standard availability test (MON-17) with its newest result per location (MON-26s). */
+function WebTestDetails({ tenant, test }: { tenant: Tenant; test: Resource }) {
+  const startCreate = useGame(s => s.startCreate)
+  const selectTab = useGame(s => s.selectTab)
+  const availability = useGame(s => s.world.telemetry.availability)
+  const view = azure.webTestView(test)
+  const recent = availability.items.filter(r => azure.sameName(r.webTestId, test.id))
+  const last = recent.slice(-view.locations.length)
+  const percent = azure.availabilityPercent(last)
+  const rules = of(tenant, azure.METRIC_ALERT_TYPE).filter(a => azure.sameName(azure.metricAlertView(a).webTestId, test.id))
+  return (
+    <>
+      <Facts rows={[
+        ['URL', view.url],
+        ['Status', view.enabled ? 'Enabled' : 'Disabled'],
+        ['Locations', view.locations.map(azure.testLocationName).join(', ')],
+        ['Frequency', `Every ${view.frequencyMs / 60_000} minutes from each location`],
+        ['Success criteria', `HTTP ${view.expectedStatus} within ${view.timeoutMs / 1000} s`],
+        ['Application Insights', nameOf(tenant, view.componentId)],
+        ['Alert rules', rules.map(r => r.name).join(', ') || 'None'],
+        ['Latest round', percent === null ? 'No results yet' : `${last.filter(r => r.Success).length} of ${last.length} passed`],
+      ]} />
+      <div className="inspector-actions">
+        <button type="button" className="button" onClick={() => selectTab('availability')}>Show results</button>
+        <button type="button" className="button" onClick={() => startCreate({
+          kind: 'webTest',
+          preset: {
+            mode: 'edit', group: groupOf(test), name: test.name, location: test.location, componentId: view.componentId ?? '', url: view.url,
+            locations: view.locations.join(','), frequency: String(view.frequencyMs / 1000), timeout: String(view.timeoutMs / 1000),
+            expectedStatus: String(view.expectedStatus), retries: String((test.properties as { RetryEnabled?: boolean }).RetryEnabled !== false), enabled: String(view.enabled),
+          },
+        })}>Edit test</button>
+        {rules.length === 0 && (
+          <button type="button" className="button" onClick={() => startCreate({ kind: 'metricAlert', preset: { webTestId: test.id } })}>Add an alert rule</button>
+        )}
+      </div>
+    </>
+  )
+}
+
+/** An availability alert rule (MON-22) and its current alert (MON-24). */
+function AlertRuleDetails({ tenant, alertRule }: { tenant: Tenant; alertRule: Resource }) {
+  const startCreate = useGame(s => s.startCreate)
+  const selectTab = useGame(s => s.selectTab)
+  const active = useGame(s => azure.activeAlertOf(s.world, alertRule.id))
+  const view = azure.metricAlertView(alertRule)
+  const test = tenant.resources[azure.armKey(view.webTestId)]
+  const n = test ? azure.webTestView(test).locations.length : 0
+  return (
+    <>
+      <p className={`alert-state ${active ? 'is-fired' : 'is-quiet'}`} role="status">
+        {active ? `Fired: ${active.failedLocations.length} locations failing` : 'No alert fired'}
+      </p>
+      <Facts rows={[
+        ['Availability test', test?.name ?? view.webTestId],
+        ['Fires when', `${view.failedLocationCount} of ${n} locations fail`],
+        ['Checked', `Every ${view.evaluationMs / 60_000} min over the last ${view.windowMs / 60_000} min`],
+        ['Severity', `Sev ${view.severity}`],
+        ['Resolves', view.autoMitigate ? 'Automatically, after three checks without failures' : 'Not automatically'],
+        ['Status', view.enabled ? 'Enabled' : 'Disabled'],
+        ...(view.description ? [['Description', view.description] as [string, string]] : []),
+      ]} />
+      <div className="inspector-actions">
+        <button type="button" className="button" onClick={() => selectTab('alerts')}>Show alerts</button>
+        <button type="button" className="button" onClick={() => startCreate({
+          kind: 'metricAlert',
+          preset: {
+            mode: 'edit', group: groupOf(alertRule), name: alertRule.name, webTestId: view.webTestId, failedLocationCount: String(view.failedLocationCount),
+            severity: String(view.severity), evaluationFrequency: String(alertRule.properties.evaluationFrequency), windowSize: String(alertRule.properties.windowSize),
+            autoMitigate: String(view.autoMitigate), enabled: String(view.enabled), description: view.description,
+          },
+        })}>Edit alert rule</button>
+      </div>
+    </>
+  )
 }
 
 /** Power state from the runtime record (VM-7), not from the desired configuration. */

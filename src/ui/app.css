@@ -346,9 +346,14 @@ body {
   gap: 4px;
   padding: 0 12px;
   border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  /* Hidden labels inside tabs are positioned against the tab, so they don't widen the page. */
+  position: relative;
 }
 
 .tab {
+  position: relative;
+  flex-shrink: 0;
   font: inherit;
   font-size: 0.9rem;
   padding: 9px 12px 8px;
@@ -1525,4 +1530,162 @@ tr.rule-default td {
   .pane {
     padding: 14px 16px;
   }
+}
+
+/* ── Monitoring: availability, alerts (step 8b) ─────────────────────────────────────────── */
+
+.tab-badge {
+  display: inline-block;
+  min-width: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--state-bad);
+  color: var(--surface);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+
+.availability-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  min-width: 0;
+}
+
+.availability-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+
+.availability-value {
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.availability-label {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.availability-summary .hint {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.availability-grid-wrap {
+  position: relative;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 12px 0 16px;
+}
+
+.availability-grid {
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: 12px;
+}
+
+.availability-grid th {
+  padding: 2px 6px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.availability-grid thead th {
+  text-align: center;
+}
+
+.availability-grid .run {
+  width: 34px;
+  height: 22px;
+  border-radius: 4px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.run-pass {
+  background: color-mix(in srgb, var(--state-ok) 22%, transparent);
+  color: var(--state-ok);
+}
+
+.run-fail {
+  background: var(--state-bad);
+  color: var(--surface);
+}
+
+.run-none {
+  color: var(--text-muted);
+}
+
+.alerts {
+  display: grid;
+  gap: 8px;
+}
+
+.alerts .hint {
+  margin: 0;
+}
+
+.alert-row.is-fired td {
+  background: color-mix(in srgb, var(--state-bad) 8%, transparent);
+}
+
+.alert-desc {
+  display: block;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.alert-state {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--state-ok);
+  border-radius: 4px;
+  background: var(--surface-2, transparent);
+  font-weight: 600;
+}
+
+.alert-state.is-fired {
+  border-left-color: var(--state-bad);
+}
+
+.check-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 4px 12px;
+  margin: 0 0 12px;
+  padding: 0;
+  border: 0;
+}
+
+.check-list legend {
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.check-list .field-hint {
+  grid-column: 1 / -1;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
 }

@@ -41,6 +41,10 @@ export function CreatePanel({ request }: { request: CreateRequest }) {
       case 'publicIp': return <PublicIpForm />
       case 'networkInterface': return <NicForm preset={preset} />
       case 'virtualMachine': return <VmForm />
+      case 'workspace': return <WorkspaceForm />
+      case 'component': return <ComponentForm />
+      case 'webTest': return <WebTestForm preset={preset} />
+      case 'metricAlert': return <MetricAlertForm preset={preset} />
       default: return <p className="empty">Unknown resource type.</p>
     }
   })()
@@ -405,6 +409,167 @@ function VmForm() {
           ['Name', basics.name], ['Region', regionName(basics.location)], ['Image', azure.IMAGES.Ubuntu2204.displayName],
           ['Size', size], ['OS disk', azure.OS_DISK_TYPES.find(t => t.sku === disk)?.displayName ?? disk],
           ['Network interface', nics.find(n => n.id === nicId)?.name ?? ''],
+        ]} />
+    </>
+  )
+}
+
+// ── Monitoring (step 8b) ───────────────────────────────────────────────────────────────────────
+
+function WorkspaceForm() {
+  const basics = useBasics('')
+  if (!basics.ready) return <NeedsFirst what="Resource group" />
+  const payload = { subscriptionId: basics.subscriptionId, resourceGroupName: basics.resourceGroupName, name: basics.name, location: basics.location }
+  return (
+    <>
+      {basics.fields}
+      <dl className="facts">
+        <div><dt>Pricing tier</dt><dd>PerGB2018 (pay per GB ingested)</dd></div>
+        <div><dt>Retention</dt><dd>30 days by default; Application Insights tables keep 90 days</dd></div>
+      </dl>
+      <p className="field-hint">4 to 63 letters, numbers and hyphens, e.g. log-pixelforge-prod.</p>
+      <ReviewCreate command={{ type: 'arm/workspaces/write', payload }}
+        targetId={azure.resourceId(basics.subscriptionId, basics.resourceGroupName, azure.WORKSPACE_TYPE, basics.name)}
+        summary={[['Name', basics.name], ['Resource group', basics.resourceGroupName], ['Region', regionName(basics.location)], ['Pricing tier', 'PerGB2018']]} />
+    </>
+  )
+}
+
+function ComponentForm() {
+  const basics = useBasics('')
+  const workspaces = useResourcesOfType(azure.WORKSPACE_TYPE)
+  const [workspaceId, setWorkspaceId] = useState(workspaces[0]?.id ?? '')
+  if (!basics.ready) return <NeedsFirst what="Resource group" />
+  if (workspaces.length === 0) return <NeedsFirst what="Log Analytics workspace" />
+  const payload = { subscriptionId: basics.subscriptionId, resourceGroupName: basics.resourceGroupName, name: basics.name, location: basics.location, workspaceResourceId: workspaceId }
+  return (
+    <>
+      {basics.fields}
+      <SelectField label="Log Analytics workspace" value={workspaceId} onChange={setWorkspaceId}
+        options={workspaces.map(w => [w.id, optionLabel(w)])}
+        hint="Application Insights sends its telemetry here. Classic, workspace-less resources are retired." />
+      <ReviewCreate command={{ type: 'arm/components/write', payload }}
+        targetId={azure.resourceId(basics.subscriptionId, basics.resourceGroupName, azure.COMPONENT_TYPE, basics.name)}
+        summary={[['Name', basics.name], ['Region', regionName(basics.location)], ['Application type', 'Web'], ['Workspace', workspaces.find(w => w.id === workspaceId)?.name ?? '']]} />
+    </>
+  )
+}
+
+/** Five locations, so a 5-minute test runs about once a minute (MON-2). */
+const DEFAULT_LOCATIONS = ['emea-nl-ams-azr', 'emea-gb-db3-azr', 'emea-fr-pra-edge', 'emea-ru-msa-edge', 'emea-se-sto-edge']
+
+function WebTestForm({ preset }: { preset: Record<string, string> }) {
+  const editing = preset.mode === 'edit'
+  const groups = useResourceGroupOptions()
+  const components = useResourcesOfType(azure.COMPONENT_TYPE)
+  const pips = useResourcesOfType(azure.PUBLIC_IP_TYPE)
+  const [group, setGroup] = useState(preset.group ?? groups[0]?.[0] ?? '')
+  const [name, setName] = useState(preset.name ?? '')
+  const [location, setLocation] = useState(preset.location ?? 'westeurope')
+  const [componentId, setComponentId] = useState(preset.componentId ?? components[0]?.id ?? '')
+  const [url, setUrl] = useState(preset.url ?? (pips[0] ? `https://${String(pips[0].properties.ipAddress)}/health` : 'https://'))
+  const [locations, setLocations] = useState<string[]>(preset.locations ? preset.locations.split(',') : DEFAULT_LOCATIONS)
+  const [frequency, setFrequency] = useState(preset.frequency ?? '300')
+  const [timeout, setTimeoutValue] = useState(preset.timeout ?? '30')
+  const [status, setStatus] = useState(preset.expectedStatus ?? '200')
+  const [retries, setRetries] = useState(preset.retries !== 'false')
+  const [enabled, setEnabled] = useState(preset.enabled !== 'false')
+  const legendId = useId()
+  if (groups.length === 0) return <NeedsFirst what="Resource group" />
+  if (components.length === 0) return <NeedsFirst what="Application Insights" />
+  const [subscriptionId = '', resourceGroupName = ''] = group.split('|')
+  const toggle = (id: string) => setLocations(l => (l.includes(id) ? l.filter(x => x !== id) : [...l, id]))
+
+  const payload = {
+    subscriptionId, resourceGroupName, name, location, componentId,
+    settings: {
+      Enabled: enabled, Frequency: Number(frequency), Timeout: Number(timeout), RetryEnabled: retries,
+      Locations: azure.TEST_LOCATIONS.map(l => l.id).filter(id => locations.includes(id)), RequestUrl: url, ExpectedHttpStatusCode: Number(status),
+    },
+  }
+  return (
+    <>
+      <SelectField label="Resource group" value={group} onChange={setGroup} options={groups} disabled={editing} />
+      <TextField label="Name" value={name} onChange={setName} readOnly={editing} placeholder="game-api-health" />
+      <SelectField label="Region" value={location} onChange={setLocation} options={REGION_OPTIONS} disabled={editing} />
+      <SelectField label="Application Insights" value={componentId} onChange={setComponentId} disabled={editing}
+        options={components.map(c => [c.id, optionLabel(c)])} hint="The test is linked to it with a hidden-link tag." />
+      <TextField label="URL" value={url} onChange={setUrl}
+        hint="Must be reachable from the public internet. The simulator has no DNS, so use the public IP address." />
+      <fieldset className="field check-list" aria-describedby={legendId}>
+        <legend>Test locations ({locations.length} of 16)</legend>
+        {azure.TEST_LOCATIONS.map(l => (
+          <label key={l.id} className="check">
+            <input type="checkbox" checked={locations.includes(l.id)} onChange={() => toggle(l.id)} />
+            <span>{l.displayName}</span>
+          </label>
+        ))}
+        <p id={legendId} className="field-hint">At least five are recommended, so a problem near one location doesn't look like an outage.</p>
+      </fieldset>
+      <div className="field-row">
+        <SelectField label="Test frequency" value={frequency} onChange={setFrequency}
+          options={azure.TEST_FREQUENCIES.map(f => [String(f), `${f / 60} minutes`])} />
+        <SelectField label="Test timeout" value={timeout} onChange={setTimeoutValue}
+          options={azure.TEST_TIMEOUTS.map(t => [String(t), `${t} seconds`])} />
+      </div>
+      <TextField label="Expected HTTP status code" value={status} onChange={setStatus} hint="200 means a normal response." />
+      <label className="check"><input type="checkbox" checked={retries} onChange={e => setRetries(e.target.checked)} /><span>Retry failed tests</span></label>
+      {editing && <label className="check"><input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)} /><span>Enabled</span></label>}
+      {!editing && <p className="field-hint">In the portal an alert rule is turned on with every new test. Here you create the alert rule yourself next.</p>}
+      <ReviewCreate command={{ type: 'arm/webtests/write', payload }} verb={editing ? 'Save' : 'Create'}
+        targetId={azure.resourceId(subscriptionId, resourceGroupName, azure.WEBTEST_TYPE, name)}
+        summary={[
+          ['Name', name], ['URL', url], ['Locations', String(locations.length)],
+          ['Every', `${Number(frequency) / 60} minutes`], ['Success', `HTTP ${status} within ${timeout} s`], ['Enabled', enabled ? 'Yes' : 'No'],
+        ]} />
+    </>
+  )
+}
+
+function MetricAlertForm({ preset }: { preset: Record<string, string> }) {
+  const editing = preset.mode === 'edit'
+  const groups = useResourceGroupOptions()
+  const tests = useResourcesOfType(azure.WEBTEST_TYPE)
+  const [group, setGroup] = useState(preset.group ?? groups[0]?.[0] ?? '')
+  const [name, setName] = useState(preset.name ?? '')
+  const [testId, setTestId] = useState(preset.webTestId ?? tests[0]?.id ?? '')
+  const test = tests.find(t => t.id === testId)
+  const n = test ? azure.webTestView(test).locations.length : 5
+  const [failed, setFailed] = useState(preset.failedLocationCount ?? String(Math.max(1, n - 2)))
+  const [severity, setSeverity] = useState(preset.severity ?? '1')
+  const [evaluation, setEvaluation] = useState(preset.evaluationFrequency ?? 'PT1M')
+  const [windowSize, setWindowSize] = useState(preset.windowSize ?? 'PT5M')
+  const [autoMitigate, setAutoMitigate] = useState(preset.autoMitigate !== 'false')
+  const [enabled, setEnabled] = useState(preset.enabled !== 'false')
+  const [description, setDescription] = useState(preset.description ?? '')
+  if (groups.length === 0) return <NeedsFirst what="Resource group" />
+  if (tests.length === 0) return <NeedsFirst what="Availability test" />
+  const [subscriptionId = '', resourceGroupName = ''] = group.split('|')
+  const payload = {
+    subscriptionId, resourceGroupName, name, webTestId: testId, severity: Number(severity), enabled,
+    evaluationFrequency: evaluation, windowSize, failedLocationCount: Number(failed), autoMitigate, ...(description ? { description } : {}),
+  }
+  const minutesLabel = (iso: string) => `${iso.replace(/^PT(\d+)M$/, '$1')} minute${iso === 'PT1M' ? '' : 's'}`
+  return (
+    <>
+      <SelectField label="Resource group" value={group} onChange={setGroup} options={groups} disabled={editing} />
+      <TextField label="Name" value={name} onChange={setName} readOnly={editing} placeholder="alert-game-api-availability" />
+      <SelectField label="Availability test" value={testId} onChange={setTestId} disabled={editing} options={tests.map(t => [t.id, optionLabel(t)])} />
+      <TextField label="Failed locations that fire the alert" value={failed} onChange={setFailed}
+        hint={`The test runs from ${n} location${n === 1 ? '' : 's'}. Recommended: the number of locations minus 2 (${Math.max(1, n - 2)}).`} />
+      <div className="field-row">
+        <SelectField label="Check every" value={evaluation} onChange={setEvaluation} options={Object.keys(azure.EVALUATION_FREQUENCIES).map(k => [k, minutesLabel(k)])} />
+        <SelectField label="Look back" value={windowSize} onChange={setWindowSize} options={Object.keys(azure.WINDOW_SIZES).map(k => [k, minutesLabel(k)])} />
+      </div>
+      <SelectField label="Severity" value={severity} onChange={setSeverity} options={[0, 1, 2, 3, 4].map(v => [String(v), `Sev ${v}`])} />
+      <label className="check"><input type="checkbox" checked={autoMitigate} onChange={e => setAutoMitigate(e.target.checked)} /><span>Resolve automatically when the test recovers</span></label>
+      {editing && <label className="check"><input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)} /><span>Enabled</span></label>}
+      <TextField label="Description (optional)" value={description} onChange={setDescription} />
+      <ReviewCreate command={{ type: 'arm/metricAlerts/write', payload }} verb={editing ? 'Save' : 'Create'}
+        targetId={azure.resourceId(subscriptionId, resourceGroupName, azure.METRIC_ALERT_TYPE, name)}
+        summary={[
+          ['Name', name], ['Test', test?.name ?? ''], ['Fires when', `${failed} of ${n} locations fail`],
+          ['Checked', `every ${minutesLabel(evaluation)} over ${minutesLabel(windowSize)}`], ['Severity', `Sev ${severity}`],
         ]} />
     </>
   )

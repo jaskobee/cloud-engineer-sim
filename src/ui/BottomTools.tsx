@@ -1,6 +1,8 @@
 import type { KeyboardEvent } from 'react'
 import type { BottomTab } from '../store/gameStore.ts'
 import { ActivityLogPanel } from './ActivityLogPanel.tsx'
+import { AlertsPanel } from './AlertsPanel.tsx'
+import { AvailabilityPanel } from './AvailabilityPanel.tsx'
 import { DeploymentsPanel } from './DeploymentsPanel.tsx'
 import { MetricsPanel } from './MetricsPanel.tsx'
 import { useGame } from './gameContext.ts'
@@ -10,14 +12,17 @@ const TABS: { id: BottomTab; label: string }[] = [
   { id: 'activity-log', label: 'Activity log' },
   { id: 'deployments', label: 'Deployments' },
   { id: 'metrics', label: 'Metrics' },
+  { id: 'availability', label: 'Availability' },
+  { id: 'alerts', label: 'Alerts' },
   { id: 'ip-flow-verify', label: 'IP flow verify' },
   { id: 'effective-rules', label: 'Effective security rules' },
 ]
 
-/** The tools under the architecture: logs, deployments and Network Watcher diagnostics. Only tools that work are listed. */
+/** The tools under the architecture: logs, deployments, monitoring and Network Watcher diagnostics. Only tools that work are listed. */
 export function BottomTools() {
   const tab = useGame(s => s.session.ui.bottomTab)
   const selectTab = useGame(s => s.selectTab)
+  const firing = useGame(s => s.world.alerts.fired.filter(a => a.monitorCondition === 'Fired').length)
 
   // Arrow keys move between tabs (ARIA tabs pattern).
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -37,6 +42,7 @@ export function BottomTools() {
           <button key={t.id} type="button" role="tab" id={`tab-${t.id}`} aria-selected={tab === t.id} aria-controls={`panel-${t.id}`}
             tabIndex={tab === t.id ? 0 : -1} className="tab" onClick={() => selectTab(t.id)}>
             {t.label}
+            {t.id === 'alerts' && firing > 0 && <span className="tab-badge">{firing}<span className="visually-hidden"> firing</span></span>}
           </button>
         ))}
       </div>
@@ -44,6 +50,8 @@ export function BottomTools() {
         {tab === 'activity-log' && <ActivityLogPanel />}
         {tab === 'deployments' && <DeploymentsPanel />}
         {tab === 'metrics' && <MetricsPanel />}
+        {tab === 'availability' && <AvailabilityPanel />}
+        {tab === 'alerts' && <AlertsPanel />}
         {tab === 'ip-flow-verify' && <IpFlowVerifyPanel />}
         {tab === 'effective-rules' && <EffectiveRulesPanel />}
       </div>
