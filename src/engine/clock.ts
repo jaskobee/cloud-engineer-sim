@@ -1,5 +1,7 @@
 import { activityLogRetention } from './activityLog.ts'
+import { metricsSystem, trafficSystem } from './azure/traffic.ts'
 import { vmPowerSystem } from './azure/virtualMachines.ts'
+import { workloadHealthSystem } from './azure/workloads.ts'
 import { deploymentSystem } from './deployments.ts'
 import type { World } from './world.ts'
 
@@ -19,7 +21,9 @@ export type System = (world: World, tick: Tick) => World
  * deployments → runtime → traffic → availability probes → metrics → alerts → mission triggers.
  * Each arrives with its step; housekeeping runs last.
  */
-export const SYSTEMS: readonly System[] = [deploymentSystem, vmPowerSystem, activityLogRetention]
+export const SYSTEMS: readonly System[] = [
+  deploymentSystem, vmPowerSystem, workloadHealthSystem, trafficSystem, metricsSystem, activityLogRetention,
+]
 
 /**
  * Advance sim time by `dt` sim milliseconds. Systems run once for every tick boundary crossed,

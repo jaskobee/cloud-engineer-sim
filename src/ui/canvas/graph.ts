@@ -1,4 +1,4 @@
-import { azure, isInProgress, type ArmId, type Resource, type World } from '../../engine/index.ts'
+import { azure, isInProgress, type ArmId, type Resource, type ServiceState, type World } from '../../engine/index.ts'
 import type { WatchedFlow } from '../../store/gameStore.ts'
 import { typeLabel } from '../resourceKinds.ts'
 
@@ -18,6 +18,8 @@ export type Tone = 'ok' | 'progress' | 'warn' | 'bad' | 'muted' | 'neutral'
 export interface Status {
   tone: Tone
   text: string
+  /** Longer explanation, shown on hover (e.g. why an app is degraded). */
+  detail?: string
 }
 
 /** A small, selectable label on a unit: its public IP, NIC or NIC-level NSG. */
@@ -159,6 +161,13 @@ const publicIpIdOf = (nic: Resource) => azure.ipConfigurationsOf(nic)[0]?.proper
 
 // ── Compute units: a VM drawn through its NIC (D-5), or a NIC on its own ─────────────────────────
 
+const APP_LABEL = { 'game-api': 'Game API', postgres: 'PostgreSQL' } as const
+const SERVICE_STATUS: Record<ServiceState['status'], (s: ServiceState) => Status> = {
+  up: s => ({ tone: 'ok', text: `${APP_LABEL[s.kind]} up`, detail: s.reason }),
+  degraded: s => ({ tone: 'warn', text: `${APP_LABEL[s.kind]} degraded`, detail: s.reason }),
+  down: s => ({ tone: 'bad', text: `${APP_LABEL[s.kind]} down`, detail: s.reason }),
+}
+
 function computeUnit(world: World, nic: Resource): Omit<CanvasNode, keyof Rect> {
   const vm = vmOfNic(world, nic)
   const chips: Chip[] = [{ resourceId: nic.id, kind: 'networkInterface', label: `${nic.name} · ${privateIpOf(nic)}` }]
@@ -171,9 +180,13 @@ function computeUnit(world: World, nic: Resource): Omit<CanvasNode, keyof Rect> 
 
   if (vm) {
     const size = (vm.properties.hardwareProfile as { vmSize?: string } | undefined)?.vmSize ?? ''
+    let status = worst(resourceStatus(world, vm), resourceStatus(world, nic))
+    const service = world.runtime[key(vm.id)]?.service
+    // A running VM's card shows its app's health (RUN-2s); a VM that isn't running shows its power state.
+    if (service && status.tone === 'ok') status = SERVICE_STATUS[service.status](service)
     return {
       id: key(nic.id), kind: 'compute', resourceId: vm.id, resourceType: vm.type, title: vm.name,
-      typeLabel: typeLabel(vm.type), facts: [size], status: worst(resourceStatus(world, vm), resourceStatus(world, nic)), chips,
+      typeLabel: typeLabel(vm.type), facts: [size], status, chips,
     }
   }
   return {

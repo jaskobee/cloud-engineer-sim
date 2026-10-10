@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { azure, type ArmId, type Refusal, type Resource, type Tenant } from '../engine/index.ts'
 import { useGame } from './gameContext.ts'
 import { RefusalNotice } from './RefusalNotice.tsx'
+import { SimulatedApp } from './SimulatedApp.tsx'
 import { typeLabel } from './resourceKinds.ts'
 
 /** Details of the selected resource group or resource, read from the same world as everything else. */
@@ -178,6 +179,7 @@ function TypeDetails({ tenant, resource }: { tenant: Tenant; resource: Resource 
               <button type="button" className="button" onClick={() => select(nic.id)}>Open {nic.name}</button>
             </div>
           )}
+          <SimulatedApp key={resource.id} vm={resource} />
         </>
       )
     }

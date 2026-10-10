@@ -1,43 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { azure, type World } from '../../src/engine/index.ts'
+import { azure, step } from '../../src/engine/index.ts'
 import type { WatchedFlow } from '../../src/store/gameStore.ts'
 import { buildCanvasGraph, evaluateWatchedFlow, INTERNET_ID, type CanvasBox, type CanvasNode } from '../../src/ui/canvas/graph.ts'
-import { id, JONAS, NSG_GAME, ok, RG, SNET_DATA, SNET_GAME, start, SUB, VNET, withSubnets } from '../engine/azure/fixtures.ts'
+import {
+  GAME_IP, id, JONAS, NIC_DB, NIC_GAME, NSG_DATA, NSG_GAME, ok, PIP_GAME as PIP, pixelForge, pixelForgeWithApps, RG, securityRule as rule,
+  SNET_DATA, SNET_GAME, start, SUB, VM_DB, VM_GAME, VNET, withSubnets,
+} from '../engine/azure/fixtures.ts'
 
-const NSG_DATA = id(azure.NSG_TYPE, 'nsg-snet-data')
-const NIC_GAME = id(azure.NIC_TYPE, 'nic-game-01')
-const NIC_DB = id(azure.NIC_TYPE, 'nic-db-01')
-const VM_GAME = id(azure.VM_TYPE, 'vm-game-01')
-const VM_DB = id(azure.VM_TYPE, 'vm-db-01')
-const PIP = id(azure.PUBLIC_IP_TYPE, 'pip-game-01')
 const DISK_GAME = id(azure.DISK_TYPE, 'vm-game-01_OsDisk_1')
-const GAME_IP = '10.40.1.4'
 
-const rule = (w: World, nsg: string, name: string, props: Record<string, unknown>, caller?: string) => ok(w, 'arm/securityRules/write', {
-  networkSecurityGroupId: nsg, name,
-  properties: { priority: 200, direction: 'Inbound', access: 'Allow', protocol: 'Tcp', sourceAddressPrefix: 'Internet', sourcePortRange: '*', destinationAddressPrefix: '*', destinationPortRange: '443', ...props },
-}, caller)
-
-const vm = (w: World, name: string, nic: string) => ok(w, 'arm/virtualMachines/write', {
-  subscriptionId: SUB, resourceGroupName: RG, name, location: 'westeurope', vmSize: 'Standard_B2s_v2',
-  image: 'Ubuntu2204', osDiskType: 'StandardSSD_LRS', adminUsername: 'pixelops', networkInterfaceId: nic,
-})
-
-/** The PixelForge slice: game VM (public IP) in snet-game, database VM in snet-data, one NSG per subnet. */
-function pixelForge(): World {
-  let w = withSubnets()
-  w = ok(w, 'arm/networkSecurityGroups/write', { subscriptionId: SUB, resourceGroupName: RG, name: 'nsg-snet-data', location: 'westeurope' })
-  w = rule(w, NSG_GAME, 'Allow-HTTPS', {})
-  w = rule(w, NSG_DATA, 'Allow-Postgres-From-Game', { sourceAddressPrefix: '10.40.1.0/24', destinationPortRange: '5432' })
-  w = rule(w, NSG_DATA, 'Deny-Other-VNet', { priority: 300, access: 'Deny', protocol: '*', sourceAddressPrefix: 'VirtualNetwork', destinationPortRange: '*' })
-  w = ok(w, 'arm/subnets/write', { virtualNetworkId: VNET, name: 'snet-game', addressPrefix: '10.40.1.0/24', networkSecurityGroupId: NSG_GAME })
-  w = ok(w, 'arm/subnets/write', { virtualNetworkId: VNET, name: 'snet-data', addressPrefix: '10.40.2.0/24', networkSecurityGroupId: NSG_DATA })
-  w = ok(w, 'arm/publicIPAddresses/write', { subscriptionId: SUB, resourceGroupName: RG, name: 'pip-game-01', location: 'westeurope', sku: { name: 'Standard' }, publicIPAllocationMethod: 'Static' })
-  w = ok(w, 'arm/networkInterfaces/write', { subscriptionId: SUB, resourceGroupName: RG, name: 'nic-game-01', location: 'westeurope', subnetId: SNET_GAME, publicIPAddressId: PIP })
-  w = ok(w, 'arm/networkInterfaces/write', { subscriptionId: SUB, resourceGroupName: RG, name: 'nic-db-01', location: 'westeurope', subnetId: SNET_DATA })
-  w = vm(w, 'vm-game-01', NIC_GAME)
-  return vm(w, 'vm-db-01', NIC_DB)
-}
 
 const players: WatchedFlow = { id: 'players', vmId: VM_GAME, direction: 'Inbound', protocol: 'Tcp', localPort: 443, remoteIp: '198.51.100.77', remotePort: 50000 }
 const gameToDb: WatchedFlow = { id: 'db', vmId: VM_DB, direction: 'Inbound', protocol: 'Tcp', localPort: 5432, remoteIp: GAME_IP, remotePort: 50000 }
@@ -169,5 +140,16 @@ describe('canvas graph: traffic comes only from the flow evaluator (rule 5)', ()
     const g = buildCanvasGraph(w, [players])
     expect(node(g, k(NIC_GAME))?.status).toEqual({ tone: 'progress', text: 'Creating…' })
     expect(g.edges.find(e => e.kind === 'traffic')?.verdict).toBe('not-modelled')
+  })
+})
+
+describe('canvas graph: app health on the VM card (RUN-2s)', () => {
+  it('shows the app status, and why it is degraded on hover', () => {
+    const up = step(pixelForgeWithApps(), 1_000)
+    expect(node(buildCanvasGraph(up, []), k(NIC_GAME))?.status).toMatchObject({ tone: 'ok', text: 'Game API up' })
+    const broken = step(rule(pixelForgeWithApps(), NSG_DATA, 'Deny-Postgres', { priority: 150, access: 'Deny', sourceAddressPrefix: '10.40.1.0/24', destinationPortRange: '5432' }), 1_000)
+    const status = node(buildCanvasGraph(broken, []), k(NIC_GAME))?.status
+    expect(status).toMatchObject({ tone: 'warn', text: 'Game API degraded' })
+    expect(status?.detail).toContain('Deny-Postgres')
   })
 })

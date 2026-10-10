@@ -139,6 +139,8 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | PIP-7s | Sim: assigned public addresses come from 198.51.100.0/24 (a documentation-only range, RFC 5737) and are labelled as made up | — | SIM |
 | PIP-8 | "You may assign a public IP address to an IP configuration, but aren't required to." A Standard public IP on a NIC needs an NSG that explicitly allows the traffic | L-NICADDR | VERIFIED |
 | PIP-9u | Associating one public IP to more than one IP configuration, or across regions/subscriptions | L-NICADDR | UNCERTAIN, refused as not modelled |
+| PIP-10 | "Public IP addresses allow Internet resources to communicate inbound to Azure resources." They can be associated with VM network interfaces, scale sets, public load balancers, gateways, NAT gateways, Application Gateways, firewalls, Bastion, Route Server and API Management | L-PIP | VERIFIED |
+| PIP-10s | Sim: internet clients reach a VM only through a Standard public IP on its NIC (the other front ends aren't modelled yet). A VM whose NIC has no public IP gets no internet traffic | — | SIM |
 
 ## NIC — Network interfaces
 
@@ -156,6 +158,7 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | PRIV-1s | Sim: dynamic allocation takes the lowest free, unreserved address | — | SIM |
 | PRIV-2 | Static allocation: "select and assign any unassigned or unreserved IP address in the subnet's address range." The 5 reserved addresses can't be assigned (SUB-2) | L-PRIVIP | VERIFIED |
 | PRIV-3 | A dynamic address is released when the NIC is deleted, moved to another subnet in the same VNet, or changed to static with a different address | L-PRIVIP | VERIFIED |
+| PRIV-4 | "Network interfaces are configured with private IP addresses for communication within the Azure virtual network and other Azure resources, and can optionally be configured with public IP addresses for communication outside the Azure (e.g. Internet, customer on-premises)." | L-PRIVIP | VERIFIED |
 
 ## VM — Virtual machines
 
@@ -260,6 +263,18 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | ARM-14s | Sim: a security rule takes part in flow evaluation once its write has succeeded and until its delete has. A rule that's still Creating doesn't apply yet. An update in progress already uses its new settings (simplification) | — | SIM |
 | REG-1 | Regions offered by the sim: West Europe `westeurope` (Netherlands), North Europe `northeurope` (Ireland), Germany West Central `germanywestcentral` (Frankfurt). Each has 3 availability zones | L-REGIONS | VERIFIED (other regions not modelled) |
 
+## RUN — Simulated runtime (not Azure resources)
+
+Everything here is the simulator's own model of what runs *on* the infrastructure. None of it is Azure behaviour, so every row is SIM and the game labels these values as made up.
+
+| ID | Rule | Source | Status |
+|---|---|---|---|
+| RUN-1s | A VM can run one simulated app (VM-6s): the **game API** (HTTPS on TCP 443, needs a PostgreSQL server at a given private IP on TCP 5432) or **PostgreSQL** (TCP 5432). Apps are set by scenario commands (`scenario/setWorkload`), aren't Azure resources and leave no activity log entry | — | SIM |
+| RUN-2s | An app is **down** while its VM isn't running. The game API is **degraded** (its `/health` answers 503 and new players can't log in) when it can't reach its database. Reaching it is decided by the flow evaluator at both ends (game VM outbound, database VM inbound, NSG-7) and needs PostgreSQL running on that VM. Health is re-checked every sim second | — | SIM |
+| RUN-3s | Player traffic follows a made-up profile. `beta-launch`: 120 new connections a minute to the game API on TCP 443, each session lasting 20 sim minutes, from addresses in the documentation range 198.51.100.0/24 (RFC 5737). Off by default; missions or the player switch it on | — | SIM |
+| RUN-4s | A new connection is evaluated once, when it starts (NSG-4, NSG-14, PIP-10s): public IP on the NIC, flow evaluator allows inbound TCP 443, VM running, game API up. Established sessions keep flowing after an NSG rule change (NSG-4) and end when their time is up or the VM stops running. Sessions are kept as per-minute groups (connection records) in the VM's runtime state | — | SIM |
+| RUN-5s | VM platform metrics (MON-6 names) are sampled once a sim minute while the VM is running, from the runtime, with made-up coefficients: `Percentage CPU` = 2 + 0.025 × active sessions (max 100; the beta launch settles near 62 %); `Network In Total` = active sessions × 12 kB + new connections × 4 kB; `Network Out Total` = active sessions × 48 kB. One day of samples is kept (TELEMETRY_CAPACITY) | — | SIM |
+
 ## FUTURE — Facts kept for later missions
 
 | ID | Rule | Source | Status |
@@ -278,3 +293,4 @@ The simulator enforces **only** what is written here. Every rule cites the offic
 | 2026-10-09 | Step 4c research (VMs): L-VMSTATES, L-FINDIMG, L-DISKS, L-DISKSKU, L-BSV2, L-TPL-VM. New VM-1s, VM-7..VM-17u. ARM-4u widened to VMs |
 | 2026-10-10 | Step 5 (flow engine): added L-SVCTAGS, NSG-14, NSG-15, NSG-15s, NW-5u, NW-6s, NW-7s |
 | 2026-10-10 | Step 6 (deployment engine): L-ASYNC, L-DEPEND, L-DEPGET, L-DEPHIST, L-VMREST, L-NSGPUT; ARM-5..ARM-14s, VM-19s; MON-10s and ARM-1s updated |
+| 2026-10-10 | Step 8a (runtime): PIP-10, PIP-10s, PRIV-4, RUN-1s..RUN-5s |

@@ -123,6 +123,19 @@ RG → VNet → subnet → compute unit (a VM drawn through its NIC), determinis
 (`@xyflow/react`) is lazy-loaded; below 900 px the resource list replaces the canvas. Azure icons (D-5) go
 unmodified into `public/azure-icons/` once downloaded (the container's proxy blocks the download).
 
+## Runtime: apps, players, metrics (step 8a)
+
+All `SIM` (RUN-1s..RUN-5s), set up by scenario commands (not logged): `scenario/setWorkload` puts a simulated app on a
+VM (`game-api` on 443 needing `postgres` on 5432, `src/engine/azure/workloads.ts`), `scenario/setTraffic` switches
+the `beta-launch` player profile on/off (`traffic.ts`). Systems, in order after the deployment/power systems:
+`workloadHealthSystem` (app health = `ipFlowVerify` at both ends; writes only on change), `trafficSystem` (2 new
+players per sim second, 20-min sessions grouped per minute; new connections need a running VM, a public IP (PIP-10s),
+an allowed inbound 443 and an `up` app; established sessions survive rule changes, NSG-4), `metricsSystem` (MON-6
+names, one sample per sim minute for running VMs). Service state lives in `world.runtime[vm].service`, sessions in
+`world.traffic`, samples in `world.telemetry.metrics`. UI: `SimulatedApp.tsx` in the VM inspector, app status on
+canvas cards, Metrics tab (`MetricsPanel.tsx`, dataviz rules: one axis per chart, crosshair, keyboard, table).
+Tests: `tests/engine/azure/runtime.test.ts`, fixtures `pixelForge()` / `pixelForgeWithApps()`.
+
 ## Working discipline
 
 - Small, reviewable steps (see `Docs/BOOTSTRAP_REPORT.md` §I). Finish each with `npm run check`.

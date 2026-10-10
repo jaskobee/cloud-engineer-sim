@@ -78,3 +78,51 @@ export function withSubnets(): World {
 
 /** The last two activity log entries (Started + Succeeded/Failed of the latest write). */
 export const lastWrite = (w: World) => w.activityLog.slice(-2)
+
+// ── The PixelForge slice ─────────────────────────────────────────────────────────────────────────
+
+export const NSG_DATA = id(azure.NSG_TYPE, 'nsg-snet-data')
+export const NIC_GAME = id(azure.NIC_TYPE, 'nic-game-01')
+export const NIC_DB = id(azure.NIC_TYPE, 'nic-db-01')
+export const VM_GAME = id(azure.VM_TYPE, 'vm-game-01')
+export const VM_DB = id(azure.VM_TYPE, 'vm-db-01')
+export const PIP_GAME = id(azure.PUBLIC_IP_TYPE, 'pip-game-01')
+export const GAME_IP = '10.40.1.4'
+export const DB_IP = '10.40.2.4'
+
+/** Write an inbound TCP 443 allow-from-Internet rule, with `props` overriding any field. */
+export const securityRule = (w: World, nsg: string, name: string, props: Record<string, unknown>, caller?: string) => ok(w, 'arm/securityRules/write', {
+  networkSecurityGroupId: nsg, name,
+  properties: { priority: 200, direction: 'Inbound', access: 'Allow', protocol: 'Tcp', sourceAddressPrefix: 'Internet', sourcePortRange: '*', destinationAddressPrefix: '*', destinationPortRange: '443', ...props },
+}, caller)
+
+export const linuxVm = (w: World, name: string, nic: string) => ok(w, 'arm/virtualMachines/write', {
+  subscriptionId: SUB, resourceGroupName: RG, name, location: 'westeurope', vmSize: 'Standard_B2s_v2',
+  image: 'Ubuntu2204', osDiskType: 'StandardSSD_LRS', adminUsername: 'pixelops', networkInterfaceId: nic,
+})
+
+/**
+ * The PixelForge slice, built as the ticket asks: game VM with a public IP in snet-game (HTTPS allowed from the
+ * internet), database VM in snet-data (5432 only from snet-game, other VNet traffic denied), one NSG per subnet.
+ */
+export function pixelForge(): World {
+  let w = withSubnets()
+  w = ok(w, 'arm/networkSecurityGroups/write', { subscriptionId: SUB, resourceGroupName: RG, name: 'nsg-snet-data', location: 'westeurope' })
+  w = securityRule(w, NSG_GAME, 'Allow-HTTPS', {})
+  w = securityRule(w, NSG_DATA, 'Allow-Postgres-From-Game', { sourceAddressPrefix: '10.40.1.0/24', destinationPortRange: '5432' })
+  w = securityRule(w, NSG_DATA, 'Deny-Other-VNet', { priority: 300, access: 'Deny', protocol: '*', sourceAddressPrefix: 'VirtualNetwork', destinationPortRange: '*' })
+  w = ok(w, 'arm/subnets/write', { virtualNetworkId: VNET, name: 'snet-game', addressPrefix: '10.40.1.0/24', networkSecurityGroupId: NSG_GAME })
+  w = ok(w, 'arm/subnets/write', { virtualNetworkId: VNET, name: 'snet-data', addressPrefix: '10.40.2.0/24', networkSecurityGroupId: NSG_DATA })
+  w = ok(w, 'arm/publicIPAddresses/write', { subscriptionId: SUB, resourceGroupName: RG, name: 'pip-game-01', location: 'westeurope', sku: { name: 'Standard' }, publicIPAllocationMethod: 'Static' })
+  w = ok(w, 'arm/networkInterfaces/write', { subscriptionId: SUB, resourceGroupName: RG, name: 'nic-game-01', location: 'westeurope', subnetId: SNET_GAME, publicIPAddressId: PIP_GAME })
+  w = ok(w, 'arm/networkInterfaces/write', { subscriptionId: SUB, resourceGroupName: RG, name: 'nic-db-01', location: 'westeurope', subnetId: SNET_DATA })
+  w = linuxVm(w, 'vm-game-01', NIC_GAME)
+  return linuxVm(w, 'vm-db-01', NIC_DB)
+}
+
+/** pixelForge with the apps installed: game API on vm-game-01 (database at DB_IP), PostgreSQL on vm-db-01. */
+export function pixelForgeWithApps(): World {
+  let w = pixelForge()
+  w = ok(w, 'scenario/setWorkload', { vmId: VM_DB, workload: { kind: 'postgres', port: 5432 } })
+  return ok(w, 'scenario/setWorkload', { vmId: VM_GAME, workload: { kind: 'game-api', port: 443, database: { ip: DB_IP, port: 5432 } } })
+}

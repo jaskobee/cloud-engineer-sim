@@ -33,7 +33,7 @@ function Handles() {
 
 function StatusLine({ status }: { status: Status }) {
   if (!status.text) return null
-  return <span className={`cv-status tone-${status.tone}`}>{status.text}</span>
+  return <span className={`cv-status tone-${status.tone}`} title={status.detail}>{status.text}</span>
 }
 
 function Chips({ chips }: { chips: Chip[] }) {

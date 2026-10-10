@@ -83,6 +83,47 @@ export interface RuntimeState {
   reasons: HealthReason[]
   /** Virtual machines only: the power state, as in the instance view `PowerState/<state>` (VM-7). */
   powerState?: 'creating' | 'starting' | 'running' | 'stopping' | 'stopped' | 'deallocating' | 'deallocated'
+  /** Virtual machines with a simulated app (RUN-1s): how the app is doing (RUN-2s). */
+  service?: ServiceState
+}
+
+/** A simulated app on a VM (RUN-1s). Not an Azure resource. */
+export type Workload =
+  | { kind: 'game-api'; port: 443; database: { ip: string; port: 5432 } }
+  | { kind: 'postgres'; port: 5432 }
+
+export interface ServiceState {
+  kind: Workload['kind']
+  status: 'up' | 'degraded' | 'down'
+  /** Plain-language reason, e.g. which rule blocks the database. */
+  reason: string
+}
+
+/** Sessions that started in the same sim minute: one connection record per group (RUN-4s). */
+export interface SessionGroup {
+  startedAt: number
+  endsAt: number
+  count: number
+  /** A representative player address (documentation range, RUN-3s). */
+  remoteIp: string
+}
+
+/** New connections in the current sim minute (RUN-4s, RUN-5s). */
+export interface ConnectionCounters {
+  minuteStart: number
+  accepted: number
+  refused: number
+  /** Why the latest refused connection was refused. */
+  refusedReason: string | null
+}
+
+/**
+ * Player traffic to one VM. Kept outside `runtime` because it changes every sim second while players
+ * connect, and views that only need health shouldn't re-render that often.
+ */
+export interface TrafficState {
+  sessions: SessionGroup[]
+  counters: ConnectionCounters
 }
 
 // ── OUTSIDE WORLD ───────────────────────────────────────────────────────────────────────────────
@@ -96,9 +137,12 @@ export interface Actor {
 }
 
 export interface External {
+  /** Player traffic profile (RUN-3s): `beta-launch` or null (off). */
   traffic: { profile: string | null }
   actors: Actor[]
   probeLocations: string[]
+  /** Simulated apps by lower-cased VM ID (RUN-1s). Optional: saves from before step 8 don't have it. */
+  workloads?: Record<ArmId, Workload>
 }
 
 // ── EVIDENCE: bounded ───────────────────────────────────────────────────────────────────────────
@@ -138,6 +182,8 @@ export interface World {
   tenant: Tenant
   deployments: Record<string, Deployment>
   runtime: Record<ArmId, RuntimeState>
+  /** Player traffic by lower-cased VM ID (RUN-4s). Optional: saves from before step 8 don't have it. */
+  traffic?: Record<ArmId, TrafficState>
   external: External
   activityLog: ActivityLogEntry[]
   telemetry: Telemetry
