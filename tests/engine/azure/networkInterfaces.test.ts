@@ -23,11 +23,11 @@ describe('public IP addresses', () => {
     expect(lastWrite(w).map(e => e.operationName)).toEqual(Array(2).fill('Microsoft.Network/publicIPAddresses/write'))
   })
 
-  it('refuse the retired Basic SKU (PIP-2) and do not model other SKUs, tiers, Dynamic or IPv6 (PIP-6s, PIP-5u)', () => {
+  it('refuse the retired Basic SKU (PIP-2) and do not model other SKUs, tiers, or IPv6 (PIP-6s); Standard is Static only (PIP-5)', () => {
     expectRule(refused(withSubnets(), 'arm/publicIPAddresses/write', pip('p', { sku: { name: 'Basic' } })), 'PIP-2')
     expectRule(refused(withSubnets(), 'arm/publicIPAddresses/write', pip('p', { sku: { name: 'StandardV2' } })), 'PIP-6s', 'not-modelled')
     expectRule(refused(withSubnets(), 'arm/publicIPAddresses/write', pip('p', { sku: { name: 'Standard', tier: 'Global' } })), 'PIP-6s', 'not-modelled')
-    expectRule(refused(withSubnets(), 'arm/publicIPAddresses/write', pip('p', { publicIPAllocationMethod: 'Dynamic' })), 'PIP-5u', 'not-modelled')
+    expectRule(refused(withSubnets(), 'arm/publicIPAddresses/write', pip('p', { publicIPAllocationMethod: 'Dynamic' })), 'PIP-5', 'rule')
     expectRule(refused(withSubnets(), 'arm/publicIPAddresses/write', pip('p', { publicIPAddressVersion: 'IPv6' })), 'PIP-6s', 'not-modelled')
     expectRule(refused(withSubnets(), 'arm/publicIPAddresses/write', pip('p', { publicIPAllocationMethod: 'Sometimes' })), 'PIP-6')
   })

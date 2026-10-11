@@ -41,7 +41,7 @@ function checkPublicIpSettings(p: PublicIpWrite): Refusal | null {
   if (p.sku.name !== 'Standard') return notModelled('PIP-6s', `SKU '${p.sku.name}' isn't modelled. The simulator offers Standard.`)
   if (p.sku.tier !== undefined && p.sku.tier !== 'Regional') return notModelled('PIP-6s', `Tier '${p.sku.tier}' isn't modelled. The simulator offers Regional.`)
   if (p.publicIPAllocationMethod === 'Dynamic') {
-    return notModelled('PIP-5u', 'Dynamic allocation for a Standard public IP isn\'t modelled; Learn is unclear on it. Use Static.')
+    return rule('PIP-5', 'A Standard public IP is always Static: Dynamic isn\'t an option for the Standard SKU.')
   }
   if (p.publicIPAllocationMethod !== 'Static') return rule('PIP-6', 'Allocation is Dynamic or Static.')
   if ((p.publicIPAddressVersion ?? 'IPv4') !== 'IPv4') return notModelled('PIP-6s', 'Only IPv4 public addresses are modelled.')
