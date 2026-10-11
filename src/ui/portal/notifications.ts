@@ -1,4 +1,4 @@
-import { azure, type World } from '../../engine/index.ts'
+import { azure, mainOperation, type World } from '../../engine/index.ts'
 import { PLAYER_PRINCIPAL } from '../../store/gameStore.ts'
 import type { Route } from './route.ts'
 
@@ -27,7 +27,7 @@ export function notificationsOf(world: World): Notification[] {
 
   for (const d of Object.values(world.deployments)) {
     if (d.caller !== PLAYER_PRINCIPAL) continue
-    const target = d.operation.targetResourceId
+    const target = mainOperation(d).targetResourceId
     const name = azure.parseArmId(target)?.names.at(-1) ?? d.name
     if (d.provisioningState === 'Running') {
       out.push({ id: `dep:${d.id}`, at: d.startedAt, kind: 'deployment', title: 'Deployment in progress', detail: `Deployment ${d.name} is in progress.`, status: 'info', route: { page: 'deployment', id: d.id }, action: null })

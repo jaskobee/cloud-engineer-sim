@@ -6,7 +6,24 @@ export type LoadResult = { ok: true; world: World } | { ok: false; reason: LoadF
 type SaveData = Record<string, unknown>
 
 /** Upgrades a save from schema version `n` to `n + 1`. Add one whenever WORLD_SCHEMA_VERSION is bumped. */
-const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {}
+const MIGRATIONS: Record<number, (save: SaveData) => SaveData> = {
+  // v1 → v2: a deployment holds a list of operations (ARM-15s) instead of one `operation`.
+  1: save => {
+    const deployments = isRecord(save['deployments']) ? save['deployments'] : {}
+    const migrated = Object.fromEntries(Object.entries(deployments).map(([id, d]) => {
+      if (!isRecord(d) || !isRecord(d['operation'])) return [id, d]
+      const { operation, finishedEventDataId, ...rest } = d
+      const op = {
+        ...operation,
+        startsAt: rest['startedAt'], endsAt: rest['endsAt'],
+        startedEventDataId: `${String(finishedEventDataId)}-started`, finishedEventDataId,
+        ...(rest['completedAt'] === undefined ? {} : { completedAt: rest['completedAt'] }),
+      }
+      return [id, { ...rest, operations: [op] }]
+    }))
+    return { ...save, schemaVersion: 2, deployments: migrated }
+  },
+}
 
 /** The world as save text. It already is plain JSON data, and telemetry is bounded. */
 export function saveWorld(world: World): string {

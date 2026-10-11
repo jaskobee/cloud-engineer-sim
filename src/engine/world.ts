@@ -4,7 +4,7 @@ import { createRingBuffer, type RingBuffer } from './ringBuffer.ts'
 import { seedRng, type RngState } from './rng.ts'
 
 /** Version of the saved world format. Bump it (and add a migration in save.ts) on any breaking change. */
-export const WORLD_SCHEMA_VERSION = 1 as const
+export const WORLD_SCHEMA_VERSION = 2 as const
 
 /** A full Azure Resource Manager resource ID. Builders and parsing arrive with the resource types (step 4). */
 export type ArmId = string

@@ -31,10 +31,12 @@ describe('asynchronous writes run as deployments (ARM-5, ARM-12s, MON-10s)', () 
     expect(d).toMatchObject({
       provisioningState: 'Running', startedAt: 2_500, endsAt: 2_500 + azure.PROVISIONING_MS['arm/virtualNetworks/write']!,
       subscriptionId: SUB, resourceGroupName: RG, caller: 'engineer@pixelforge.example',
-      operation: { targetResourceId: VNET, created: [VNET], updated: [], deleted: [] },
     })
+    expect(d.operations).toHaveLength(1)
+    expect(d.operations[0]).toMatchObject({ targetResourceId: VNET, created: [VNET], updated: [], deleted: [], startsAt: 2_500, endsAt: d.endsAt })
     expect(d.name).toMatch(/^vnet-pixelforge-\d{14}$/)
-    expect(d.operation.operationId).toBe(w.activityLog.at(-1)?.operationId)
+    expect(d.operations[0]?.operationId).toBe(w.activityLog.at(-1)?.operationId)
+    expect(d.operations[0]?.startedEventDataId).toBe(w.activityLog.at(-1)?.eventDataId)
     expect(d.correlationId).toBe(w.activityLog.at(-1)?.correlationId)
   })
 
@@ -50,7 +52,7 @@ describe('asynchronous writes run as deployments (ARM-5, ARM-12s, MON-10s)', () 
     expect(state(after, VNET)).toBe('Succeeded')
     expect(after.deployments[d.id]).toMatchObject({ provisioningState: 'Succeeded', completedAt: boundary })
     expect(after.activityLog.at(-1)).toMatchObject({
-      status: 'Succeeded', eventDataId: d.finishedEventDataId, operationId: d.operation.operationId,
+      status: 'Succeeded', eventDataId: d.operations[0]?.finishedEventDataId, operationId: d.operations[0]?.operationId,
       correlationId: d.correlationId, resourceId: VNET, eventTimestamp: boundary,
     })
   })
@@ -69,7 +71,7 @@ describe('asynchronous writes run as deployments (ARM-5, ARM-12s, MON-10s)', () 
   it('an update shows Updating, then Succeeded (ARM-1s)', () => {
     const w = start(withSubnets(), 'arm/subnets/write', { virtualNetworkId: VNET, name: 'snet-game', addressPrefix: '10.40.1.0/24', networkSecurityGroupId: NSG_GAME })
     expect(state(w, SNET_GAME)).toBe('Updating')
-    expect(only(w).operation.updated).toContain(SNET_GAME)
+    expect(only(w).operations[0]?.updated).toContain(SNET_GAME)
     expect(state(settle(w), SNET_GAME)).toBe('Succeeded')
   })
 
@@ -81,7 +83,7 @@ describe('asynchronous writes run as deployments (ARM-5, ARM-12s, MON-10s)', () 
     })
     w = start(w, 'arm/securityRules/delete', { securityRuleId: rule })
     expect(state(w, rule)).toBe('Deleting')
-    expect(only(w).operation.deleted).toEqual([rule])
+    expect(only(w).operations[0]?.deleted).toEqual([rule])
     expect(azure.getResource(settle(w), rule)).toBeUndefined()
   })
 })
@@ -131,7 +133,7 @@ describe('virtual machines (VM-7, VM-15s, VM-19s)', () => {
   it('the VM and its OS disk are Creating together and the VM is in the creating power state', () => {
     const w = begin()
     const disk = id(azure.DISK_TYPE, 'vm-game-01_OsDisk_1')
-    expect(only(w).operation.created).toEqual(expect.arrayContaining([VM, disk]))
+    expect(only(w).operations[0]?.created).toEqual(expect.arrayContaining([VM, disk]))
     expect([state(w, VM), state(w, disk)]).toEqual(['Creating', 'Creating'])
     expect(azure.powerStateOf(step(w, 30_000), VM)).toBe('creating')
     const done = settle(w)
@@ -186,8 +188,8 @@ describe('deployments are plain, deterministic data', () => {
   it('keeps the newest 800 deployments per resource group, never dropping running ones (ARM-10)', () => {
     const make = (i: number, state: Deployment['provisioningState'], rg = RG): Deployment => ({
       id: `d${String(i).padStart(4, '0')}`, name: `x-${i}`, correlationId: 'c', subscriptionId: SUB, resourceGroupName: rg, caller: 'p',
-      provisioningState: state, startedAt: i, endsAt: i + 1, finishedEventDataId: 'e',
-      operation: { operationId: `o${i}`, operationName: 'n', targetResourceId: 't', created: [], updated: [], deleted: [] },
+      provisioningState: state, startedAt: i, endsAt: i + 1,
+      operations: [{ operationId: `o${i}`, operationName: 'n', targetResourceId: 't', created: [], updated: [], deleted: [], startsAt: i, endsAt: i + 1, startedEventDataId: 's', finishedEventDataId: 'e' }],
     })
     const all: Record<string, Deployment> = {}
     for (let i = 0; i < DEPLOYMENT_HISTORY_LIMIT + 5; i++) all[make(i, i === 0 ? 'Running' : 'Succeeded').id] = make(i, i === 0 ? 'Running' : 'Succeeded')

@@ -1,10 +1,10 @@
-import { azure, type ArmId } from '../engine/index.ts'
+import { azure, mainOperation, type ArmId } from '../engine/index.ts'
 import { formatDuration, formatSimTime } from './format.ts'
 import { useGame } from './gameContext.ts'
 import { typeLabel } from './resourceKinds.ts'
 
 /**
- * The resource group's deployment history (ARM-10): one deployment per write (ARM-12s), newest first.
+ * The resource group's deployment history (ARM-10): one deployment per write (ARM-12s) or per multi-resource create (ARM-15s), newest first.
  * Durations are made up and game-paced (ARM-13s), and the panel says so.
  */
 export function DeploymentsPanel({ resourceGroupId }: { resourceGroupId?: ArmId } = {}) {
@@ -41,7 +41,8 @@ export function DeploymentsPanel({ resourceGroupId }: { resourceGroupId?: ArmId 
           <tbody>
             {rows.map(d => {
               const at = formatSimTime(epochMs, d.startedAt)
-              const target = d.operation.targetResourceId
+              const main = mainOperation(d)
+              const target = main.targetResourceId
               const exists = resources[azure.armKey(target)] !== undefined
               const name = target.split('/').at(-1) ?? target
               const elapsed = (d.completedAt ?? now) - d.startedAt
@@ -57,7 +58,7 @@ export function DeploymentsPanel({ resourceGroupId }: { resourceGroupId?: ArmId 
                     {exists
                       ? <button type="button" className="link-button" onClick={() => select(target)}>{name}</button>
                       : name}
-                    <span className="deployment-type"> · {typeLabel(d.operation.operationName.replace(/\/(write|delete)$/, ''))}{d.operation.deleted.length > 0 ? ' (delete)' : ''}</span>
+                    <span className="deployment-type"> · {typeLabel(main.operationName.replace(/\/(write|delete)$/, ''))}{main.deleted.length > 0 ? ' (delete)' : ''}{d.operations.length > 1 ? ` + ${d.operations.length - 1} more` : ''}</span>
                   </td>
                   <td className="mono">{at.day} {at.time}</td>
                   <td className="mono">{formatDuration(elapsed)}{d.provisioningState === 'Running' ? ' so far' : ''}</td>

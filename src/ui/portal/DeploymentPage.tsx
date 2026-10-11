@@ -1,5 +1,5 @@
 import { Button, MessageBar, MessageBarBody, MessageBarTitle, Spinner } from '@fluentui/react-components'
-import { azure } from '../../engine/index.ts'
+import { azure, mainOperation, type DeploymentOperation } from '../../engine/index.ts'
 import { formatDuration, formatSimTime } from '../format.ts'
 import { useGame } from '../gameContext.ts'
 import { useStableWorld } from './useStableWorld.ts'
@@ -22,8 +22,7 @@ export function DeploymentPage({ id }: { id: string }) {
   if (!deployment) {
     return <PageFrame title="Deployment"><p className="empty">This deployment is no longer in the history (ARM-10 keeps the newest 800 per resource group).</p></PageFrame>
   }
-  const { operation } = deployment
-  const target = operation.targetResourceId
+  const target = mainOperation(deployment).targetResourceId
   const start = formatSimTime(epochMs, deployment.startedAt)
   const elapsed = (deployment.completedAt ?? now) - deployment.startedAt
   const running = deployment.provisioningState === 'Running'
@@ -56,17 +55,7 @@ export function DeploymentPage({ id }: { id: string }) {
         <table className="grid">
           <thead><tr><th scope="col">Resource</th><th scope="col">Type</th><th scope="col">Status</th><th scope="col">Operation</th></tr></thead>
           <tbody>
-            {[...operation.created.map(r => [r, 'Create'] as const), ...operation.updated.map(r => [r, 'Update'] as const), ...operation.deleted.map(r => [r, 'Delete'] as const)].map(([r, op]) => (
-              <tr key={`${op}:${r}`}>
-                <td><ResourceLink id={r} /></td>
-                <td>{typeLabel(azure.parseArmId(r)?.type ?? '')}</td>
-                <td><span className={`status status-${deployment.provisioningState.toLowerCase()}`}>{running ? 'In progress' : deployment.provisioningState}</span></td>
-                <td>{op}</td>
-              </tr>
-            ))}
-            {operation.created.length + operation.updated.length + operation.deleted.length === 0 && (
-              <tr><td><ResourceLink id={target} /></td><td>{typeLabel(azure.parseArmId(target)?.type ?? '')}</td><td>{deployment.provisioningState}</td><td>{operation.operationName}</td></tr>
-            )}
+            {deployment.operations.flatMap(op => operationRows(op, now))}
           </tbody>
         </table>
       </div>
@@ -78,4 +67,22 @@ export function DeploymentPage({ id }: { id: string }) {
       </div>
     </PageFrame>
   )
+}
+
+/** One row per resource an operation touches (Operation details, PORTAL-9), in the order the operations run (ARM-15s). */
+function operationRows(op: DeploymentOperation, now: number) {
+  const status = op.completedAt !== undefined ? 'Succeeded' : op.startsAt <= now ? 'Running' : 'Waiting'
+  const label = status === 'Running' ? 'In progress' : status === 'Waiting' ? 'Waiting for the previous step' : status
+  const rows: [string, string][] = [
+    ...op.created.map(r => [r, 'Create'] as [string, string]), ...op.updated.map(r => [r, 'Update'] as [string, string]), ...op.deleted.map(r => [r, 'Delete'] as [string, string]),
+  ]
+  if (rows.length === 0) rows.push([op.targetResourceId, op.operationName])
+  return rows.map(([r, kind]) => (
+    <tr key={`${op.operationId}:${kind}:${r}`}>
+      <td><ResourceLink id={r} /></td>
+      <td>{typeLabel(azure.parseArmId(r)?.type ?? '')}</td>
+      <td><span className={`status status-${status.toLowerCase()}`}>{label}</span></td>
+      <td>{kind}</td>
+    </tr>
+  ))
 }
