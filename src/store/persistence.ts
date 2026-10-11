@@ -79,3 +79,29 @@ export function writeProfile(storage: KeyValueStorage | null, profile: Profile):
     return false
   }
 }
+
+// ── Theme (portal Settings): a per-browser convenience, never game state ──────────────────────
+
+export const THEME_KEY = 'cloud-engineer-sim:theme'
+
+export type ThemeChoice = 'system' | 'light' | 'dark'
+
+const THEME_CHOICES: readonly ThemeChoice[] = ['system', 'light', 'dark']
+
+/** The chosen theme, or 'system' (follow the operating system) when nothing usable is stored. */
+export function readTheme(storage: KeyValueStorage | null): ThemeChoice {
+  try {
+    const text = storage?.getItem(THEME_KEY)
+    return THEME_CHOICES.find(c => c === text) ?? 'system'
+  } catch {
+    return 'system'
+  }
+}
+
+export function writeTheme(storage: KeyValueStorage | null, choice: ThemeChoice): void {
+  try {
+    storage?.setItem(THEME_KEY, choice)
+  } catch {
+    // The choice just won't survive a reload.
+  }
+}

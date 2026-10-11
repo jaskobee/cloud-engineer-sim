@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { step } from '../../src/engine/index.ts'
 import { newWorld } from '../../src/store/gameStore.ts'
-import { PROFILE_KEY, SAVE_KEY, clearSave, readProfile, readSave, writeProfile, writeSave, type KeyValueStorage } from '../../src/store/persistence.ts'
+import { PROFILE_KEY, SAVE_KEY, THEME_KEY, clearSave, readProfile, readSave, readTheme, writeProfile, writeSave, writeTheme, type KeyValueStorage } from '../../src/store/persistence.ts'
 import { emptyProfile, recordRun } from '../../src/missions/index.ts'
 
 function memoryStorage(): KeyValueStorage & { data: Map<string, string> } {
@@ -64,5 +64,21 @@ describe('profile slot (step 11)', () => {
     expect(readProfile(throwing)).toEqual(emptyProfile())
     expect(writeProfile(throwing, profile)).toBe(false)
     expect(writeProfile(null, profile)).toBe(false)
+  })
+})
+
+describe('theme preference (portal Settings)', () => {
+  it('defaults to system, round-trips each choice, ignores garbage and blocked storage', () => {
+    const storage = memoryStorage()
+    expect(readTheme(storage)).toBe('system')
+    for (const choice of ['light', 'dark', 'system'] as const) {
+      writeTheme(storage, choice)
+      expect(readTheme(storage)).toBe(choice)
+    }
+    storage.data.set(THEME_KEY, 'purple')
+    expect(readTheme(storage)).toBe('system')
+    expect(readTheme(throwing)).toBe('system')
+    expect(readTheme(null)).toBe('system')
+    expect(() => writeTheme(throwing, 'dark')).not.toThrow()
   })
 })

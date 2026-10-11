@@ -1,46 +1,38 @@
 /*
- * Design tokens. Colour carries meaning: neutral surfaces, saturated colour only for state
- * (green = healthy, amber = attention or deploying, red = failed) and one blue for what you can act on.
+ * Design tokens. Fluent 2 (the portal's design language) provides the values through FluentProvider's CSS
+ * variables on .portal-root; our names alias them. Colour carries meaning: neutral surfaces, saturated colour
+ * only for state (green = healthy, amber = attention or deploying, red = failed) and brand blue for actions.
  */
-:root {
-  color-scheme: light dark;
-
-  --bg: #f4f6f8;
-  --surface: #ffffff;
-  --border: #d8dee5;
-  --text: #17212b;
-  --text-muted: #5b6875;
-  --accent: #0b6bcb;
+.portal-root {
+  --bg: var(--colorNeutralBackground2);
+  --surface: var(--colorNeutralBackground1);
+  --surface-hover: var(--colorNeutralBackground1Hover);
+  --border: var(--colorNeutralStroke2);
+  --text: var(--colorNeutralForeground1);
+  --text-muted: var(--colorNeutralForeground3);
+  --accent: var(--colorBrandForeground1);
+  --accent-bg: var(--colorBrandBackground);
   /* Text on an accent-filled control. */
-  --on-accent: #ffffff;
-  --state-ok: #1f9d63;
-  --state-warn: #c98a00;
-  --state-bad: #d0393e;
+  --on-accent: var(--colorNeutralForegroundOnBrand);
+  --state-ok: var(--colorStatusSuccessForeground1);
+  --state-warn: var(--colorStatusWarningForeground1);
+  --state-bad: var(--colorStatusDangerForeground1);
 
-  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Menlo, Consolas, monospace;
-  --radius: 10px;
+  --font-ui: var(--fontFamilyBase);
+  --font-mono: var(--fontFamilyMonospace);
+  --radius: var(--borderRadiusMedium);
 
   /* The sim clock is a console readout: dark in both themes. */
-  --console-bg: #17212b;
-  --console-fg: #eef3f7;
-}
+  --console-bg: #1b1a19;
+  --console-fg: #f3f2f1;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f1720;
-    --surface: #16212c;
-    --border: #273544;
-    --text: #e3e9ef;
-    --text-muted: #93a1af;
-    --accent: #5aa9ff;
-    --on-accent: #06121f;
-    --state-ok: #3ccf91;
-    --state-warn: #f0b429;
-    --state-bad: #ff6b6b;
-    --console-bg: #070c11;
-    --console-fg: #e3e9ef;
-  }
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  /* Fluent 2 web ramp, Body 1: 14/20. */
+  font-size: var(--fontSizeBase300);
+  line-height: var(--lineHeightBase300);
 }
 
 *,
@@ -57,11 +49,6 @@ body,
 }
 
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-ui);
-  font-size: 16px;
-  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
 
