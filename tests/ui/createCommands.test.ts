@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { azure } from '../../src/engine/index.ts'
+import { azure, DEPLOYMENT_COMMAND } from '../../src/engine/index.ts'
+import { createGameStore } from '../../src/store/gameStore.ts'
 import { buildCommands, canCreate, reviewKey, targetIdOf } from '../../src/ui/portal/create/commands.ts'
-import { NIC_GAME, RG, SNET_GAME, SUB } from '../engine/azure/fixtures.ts'
+import { RG, SNET_GAME, SUB, VNET, withSubnets } from '../engine/azure/fixtures.ts'
 
 const basics = { subscriptionId: SUB, resourceGroupName: RG, newResourceGroup: '', name: 'x', location: 'westeurope' }
 
@@ -43,14 +44,45 @@ describe('create wizards build the same commands as before (PORTAL-6, PORTAL-7)'
     expect(buildCommands('networkInterface', { ...basics, name: 'nic-a', subnetId: SNET_GAME, privateIPAllocationMethod: 'Dynamic', privateIPAddress: '10.40.1.10' })[0]?.payload).not.toHaveProperty('privateIPAddress')
   })
 
-  it('virtual machine: Basics, Disks, Networking', () => {
-    expect(buildCommands('virtualMachine', { ...basics, name: 'vm-a', vmSize: 'Standard_B2s_v2', osDiskType: 'StandardSSD_LRS', adminUsername: 'pixelops', networkInterfaceId: NIC_GAME })[0]).toEqual({
-      type: 'arm/virtualMachines/write',
+  it('virtual machine: one deployment that creates the public IP, the network interface and the VM (PORTAL-20, ARM-15s)', () => {
+    const vm = { ...basics, name: 'vm-a', vmSize: 'Standard_B2s_v2', osDiskType: 'StandardSSD_LRS', adminUsername: 'pixelops', vnetId: VNET, subnetId: SNET_GAME, publicIp: 'new', publicIpName: '' }
+    const pipId = azure.resourceId(SUB, RG, azure.PUBLIC_IP_TYPE, 'vm-a-ip')
+    const nicId = azure.resourceId(SUB, RG, azure.NIC_TYPE, 'vm-a-nic')
+    const place = { subscriptionId: SUB, resourceGroupName: RG, location: 'westeurope' }
+    expect(buildCommands('virtualMachine', vm)).toEqual([{
+      type: DEPLOYMENT_COMMAND,
       payload: {
-        subscriptionId: SUB, resourceGroupName: RG, name: 'vm-a', location: 'westeurope', vmSize: 'Standard_B2s_v2', image: 'Ubuntu2204',
-        osDiskType: 'StandardSSD_LRS', adminUsername: 'pixelops', networkInterfaceId: NIC_GAME,
+        resources: [
+          { type: 'arm/publicIPAddresses/write', payload: { ...place, name: 'vm-a-ip', sku: { name: 'Standard', tier: 'Regional' }, publicIPAllocationMethod: 'Static', publicIPAddressVersion: 'IPv4' } },
+          { type: 'arm/networkInterfaces/write', payload: { ...place, name: 'vm-a-nic', subnetId: SNET_GAME, privateIPAllocationMethod: 'Dynamic', publicIPAddressId: pipId, networkSecurityGroupId: null } },
+          { type: 'arm/virtualMachines/write', payload: { ...place, name: 'vm-a', vmSize: 'Standard_B2s_v2', image: 'Ubuntu2204', osDiskType: 'StandardSSD_LRS', adminUsername: 'pixelops', networkInterfaceId: nicId } },
+        ],
       },
-    })
+    }])
+    expect(targetIdOf('virtualMachine', vm)).toBe(azure.resourceId(SUB, RG, azure.VM_TYPE, 'vm-a'))
+    // A name typed in the Create public IP address dialog.
+    const named = buildCommands('virtualMachine', { ...vm, publicIpName: 'pip-game' })[0]?.payload as { resources: { payload: { name: string } }[] }
+    expect(named.resources[0]?.payload.name).toBe('pip-game')
+  })
+
+  it('virtual machine with Public IP None: network interface without a public IP, then the VM', () => {
+    const cmds = buildCommands('virtualMachine', { ...basics, name: 'vm-db', vnetId: VNET, subnetId: SNET_GAME, publicIp: 'none', vmSize: 'Standard_B2s_v2', osDiskType: 'StandardSSD_LRS', adminUsername: 'pixelops' })
+    const { resources } = cmds[0]?.payload as { resources: { type: string; payload: Record<string, unknown> }[] }
+    expect(resources.map(r => r.type)).toEqual(['arm/networkInterfaces/write', 'arm/virtualMachines/write'])
+    expect(resources[0]?.payload['publicIPAddressId']).toBeNull()
+  })
+
+  it('virtual machine with a new resource group: the group first, then the deployment', () => {
+    const cmds = buildCommands('virtualMachine', { ...basics, resourceGroupName: 'rg-new', newResourceGroup: 'true', name: 'vm-a', subnetId: SNET_GAME, publicIp: 'new' })
+    expect(cmds.map(c => c.type)).toEqual(['arm/resourceGroups/write', DEPLOYMENT_COMMAND])
+  })
+
+  it('virtual machine without a subnet: Review + create shows a refusal instead of creating anything', () => {
+    const store = createGameStore({ world: withSubnets() })
+    const cmds = buildCommands('virtualMachine', { ...basics, name: 'vm-a', subnetId: '', publicIp: 'new', vmSize: 'Standard_B2s_v2', osDiskType: 'StandardSSD_LRS', adminUsername: 'pixelops' })
+    expect(store.getState().checkAll(cmds)).not.toBeNull()
+    const ok = buildCommands('virtualMachine', { ...basics, name: 'vm-a', subnetId: SNET_GAME, publicIp: 'new', vmSize: 'Standard_B2s_v2', osDiskType: 'StandardSSD_LRS', adminUsername: 'pixelops' })
+    expect(store.getState().checkAll(ok)).toBeNull()
   })
 
   it('review then edit invalidates: Create is only allowed for the exact commands that passed validation', () => {

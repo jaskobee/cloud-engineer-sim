@@ -1,4 +1,4 @@
-import { azure, type ArmId, type Refusal } from '../../../engine/index.ts'
+import { azure, DEPLOYMENT_COMMAND, type ArmId, type Refusal } from '../../../engine/index.ts'
 import type { PlayerCommand } from '../../../store/gameStore.ts'
 
 /**
@@ -17,6 +17,10 @@ function withGroup(values: Values, command: PlayerCommand): PlayerCommand[] {
 const basics = (values: Values) => ({
   subscriptionId: v(values, 'subscriptionId'), resourceGroupName: v(values, 'resourceGroupName'), name: v(values, 'name'), location: v(values, 'location'),
 })
+
+/** Made-up default names for what the VM wizard creates with the VM (PORTAL-20s). */
+export const nicNameFor = (vmName: string): string => `${vmName}-nic`
+export const defaultPublicIpName = (values: Values): string => v(values, 'publicIpName') || `${v(values, 'name')}-ip`
 
 export function buildCommands(kind: string, values: Values): PlayerCommand[] {
   switch (kind) {
@@ -42,14 +46,33 @@ export function buildCommands(kind: string, values: Values): PlayerCommand[] {
         },
       })
     }
-    case 'virtualMachine':
-      return withGroup(values, {
-        type: 'arm/virtualMachines/write',
-        payload: {
-          ...basics(values), vmSize: v(values, 'vmSize'), image: 'Ubuntu2204', osDiskType: v(values, 'osDiskType'),
-          adminUsername: v(values, 'adminUsername'), networkInterfaceId: v(values, 'networkInterfaceId'),
-        },
+    case 'virtualMachine': {
+      // The portal's Create a virtual machine makes the network interface (and a new public IP) with the VM, as one
+      // deployment (PORTAL-20, ARM-15s): public IP, then network interface, then VM.
+      const b = basics(values)
+      const name = v(values, 'name')
+      const resources: { type: string; payload: unknown }[] = []
+      let publicIPAddressId: ArmId | null = null
+      if (v(values, 'publicIp') !== 'none') {
+        const pipName = defaultPublicIpName(values)
+        publicIPAddressId = azure.resourceId(b.subscriptionId, b.resourceGroupName, azure.PUBLIC_IP_TYPE, pipName)
+        resources.push({
+          type: 'arm/publicIPAddresses/write',
+          payload: { ...b, name: pipName, sku: { name: 'Standard', tier: 'Regional' }, publicIPAllocationMethod: 'Static', publicIPAddressVersion: 'IPv4' },
+        })
+      }
+      const nicName = nicNameFor(name)
+      const networkInterfaceId = azure.resourceId(b.subscriptionId, b.resourceGroupName, azure.NIC_TYPE, nicName)
+      resources.push({
+        type: 'arm/networkInterfaces/write',
+        payload: { ...b, name: nicName, subnetId: v(values, 'subnetId'), privateIPAllocationMethod: 'Dynamic', publicIPAddressId, networkSecurityGroupId: null },
       })
+      resources.push({
+        type: 'arm/virtualMachines/write',
+        payload: { ...b, vmSize: v(values, 'vmSize'), image: 'Ubuntu2204', osDiskType: v(values, 'osDiskType'), adminUsername: v(values, 'adminUsername'), networkInterfaceId },
+      })
+      return withGroup(values, { type: DEPLOYMENT_COMMAND, payload: { resources } })
+    }
     case 'workspace':
       return withGroup(values, { type: 'arm/workspaces/write', payload: basics(values) })
     case 'component':

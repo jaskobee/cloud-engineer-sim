@@ -63,8 +63,8 @@ export function Wizard({ kind, preset }: { kind: string; preset: Record<string, 
       }
     }
     const after = store.getState().world
-    const operationId = last?.operationId
-    if (operationId && after.deployments[operationId]) navigate({ page: 'deployment', id: operationId }, { replace: true })
+    const deploymentId = last?.status === 'accepted' ? last.deploymentId : undefined
+    if (deploymentId && after.deployments[deploymentId]) navigate({ page: 'deployment', id: deploymentId }, { replace: true })
     else {
       const target = targetIdOf(kind, values)
       navigate(target ? routeForResource(target, after) : { page: 'home' }, { replace: true })

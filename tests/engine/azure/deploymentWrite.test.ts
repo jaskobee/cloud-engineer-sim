@@ -26,6 +26,7 @@ describe('multi-resource deployment (ARM-15s)', () => {
     expect(outcome.status).toBe('accepted')
     for (const r of [PIP, NIC, VM, disk]) expect(state(world, r)).toBe('Creating')
     const d = Object.values(world.deployments).find(x => x.provisioningState === 'Running')!
+    expect(outcome).toMatchObject({ deploymentId: d.id, operationId: d.operations[2]?.operationId })
     expect(d.operations.map(o => o.targetResourceId)).toEqual([PIP, NIC, VM])
     expect(d.name).toMatch(/^vm-web-\d{14}$/)
     // Only the first operation has started.

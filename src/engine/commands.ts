@@ -54,7 +54,7 @@ export interface CommandHandler<P = unknown> {
 export type Registry = ReadonlyMap<string, CommandHandler>
 
 export type Outcome =
-  | { status: 'accepted'; operationId?: string }
+  | { status: 'accepted'; operationId?: string; /** Set when the write runs as a deployment (ARM-12s, ARM-15s). */ deploymentId?: string }
   | { status: 'refused'; refusal: Refusal; operationId?: string }
 
 export interface DispatchResult {
@@ -320,6 +320,6 @@ export function dispatch(world: World, registry: Registry, command: Command): Di
       rng: { ...final.rng, ids },
       activityLog: [...final.activityLog, started],
     },
-    outcome: { status: 'accepted', operationId: operations.at(-1)!.operationId },
+    outcome: { status: 'accepted', operationId: operations.at(-1)!.operationId, deploymentId: record.id },
   }
 }

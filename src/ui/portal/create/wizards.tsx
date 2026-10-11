@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { azure, type Resource, type World } from '../../../engine/index.ts'
-import type { Values } from './commands.ts'
+import { defaultPublicIpName, nicNameFor, type Values } from './commands.ts'
+import { VmNetworking, subnetsOf, vnetsIn } from './VmNetworking.tsx'
 import { FixedField, FormSection, initialProject, ProjectDetails, REGION_OPTIONS, SelectField, SimNote, TextField, type Set } from './fields.tsx'
 
 /**
@@ -158,14 +159,17 @@ export const WIZARDS: Record<string, WizardDef> = {
   },
 
   virtualMachine: {
-    tabs: [BASICS, { id: 'disks', label: 'Disks', rule: 'PORTAL-7' }, { id: 'networking', label: 'Networking', rule: 'PORTAL-7' }],
+    tabs: [BASICS, { id: 'disks', label: 'Disks', rule: 'PORTAL-7' }, { id: 'networking', label: 'Networking', rule: 'PORTAL-20' }],
     initial: world => {
-      const vms = of(world, azure.VM_TYPE)
-      const free = of(world, azure.NIC_TYPE).find(n => !vms.some(vm => azure.networkInterfacesOf(vm).some(r => azure.sameName(r.id, n.id))))
-      return { ...initialProject(world), vmSize: 'Standard_B2s_v2', osDiskType: 'StandardSSD_LRS', adminUsername: '', networkInterfaceId: free?.id ?? '' }
+      const project = initialProject(world)
+      const vnet = vnetsIn(world, project.location ?? 'westeurope')[0]
+      return {
+        ...project, vmSize: 'Standard_B2s_v2', osDiskType: 'StandardSSD_LRS', adminUsername: '',
+        vnetId: vnet?.id ?? '', subnetId: subnetsOf(world, vnet?.id ?? '')[0]?.id ?? '', publicIp: 'new', publicIpName: '',
+      }
     },
     render: (tab, props) => {
-      const { values, set, world } = props
+      const { values, set } = props
       if (tab === 'basics') {
         const sizeLabel = (s: (typeof azure.VM_SIZES)[number]) => `${s.name} (${s.vCpus} vCPUs, ${s.memoryGiB} GiB memory)`
         return (
@@ -183,7 +187,10 @@ export const WIZARDS: Record<string, WizardDef> = {
               <TextField label="Username" required value={values.adminUsername ?? ''} onChange={x => set('adminUsername', x)} placeholder="pixelops"
                 hint="1 to 32 characters. Names like admin, root or test aren't allowed." />
             </FormSection>
-            <SimNote>Inbound port rules aren't set here in the simulator: allow traffic with a network security group.</SimNote>
+            <FormSection title="Inbound port rules">
+              <FixedField label="Public inbound ports" value="None" hint="All public inbound ports are closed for this virtual machine." />
+              <SimNote>The portal also offers Allow selected ports. The simulator doesn't model the rules that option creates: allow traffic with a network security group instead.</SimNote>
+            </FormSection>
           </>
         )
       }
@@ -195,22 +202,17 @@ export const WIZARDS: Record<string, WizardDef> = {
           </FormSection>
         )
       }
-      const vms = of(world, azure.VM_TYPE)
-      const nics = of(world, azure.NIC_TYPE)
-      const free = nics.filter(n => !vms.some(vm => azure.networkInterfacesOf(vm).some(r => azure.sameName(r.id, n.id))))
-      return (
-        <FormSection title="Network interface">
-          <SimNote>In the portal this tab creates a new network interface from Virtual network, Subnet, Public IP and NIC network security group. In the simulator you attach one you created first.</SimNote>
-          <SelectField label="Network interface" required value={values.networkInterfaceId ?? ''} onChange={x => set('networkInterfaceId', x)}
-            options={free.length ? free.map(n => [n.id, optionLabel(n)]) : [['', 'No free network interface: create one first']]}
-            hint="Its subnet and public IP decide how the VM is reached. It must be in the VM's region." />
-        </FormSection>
-      )
+      return <VmNetworking {...props} />
     },
     summary: (values, world) => [
       ...basicSummary(values), ['Image', azure.IMAGES.Ubuntu2204.displayName], ['Size', values.vmSize ?? ''],
+      ['Public inbound ports', 'None'],
       ['OS disk type', azure.OS_DISK_TYPES.find(t => t.sku === values.osDiskType)?.displayName ?? ''],
-      ['Network interface', world.tenant.resources[azure.armKey(values.networkInterfaceId ?? '')]?.name ?? ''],
+      ['Virtual network', world.tenant.resources[azure.armKey(values.vnetId ?? '')]?.name ?? ''],
+      ['Subnet', world.tenant.resources[azure.armKey(values.subnetId ?? '')]?.name ?? ''],
+      ['Public IP', values.publicIp === 'none' ? 'None' : `(new) ${defaultPublicIpName(values)}`],
+      ['NIC network security group', 'None'],
+      ['Network interface', `(new) ${nicNameFor(values.name ?? '')}`],
     ],
   },
 
