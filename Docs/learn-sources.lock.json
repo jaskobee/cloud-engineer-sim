@@ -1,4 +1,9 @@
 {
+  "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-manage-alert-instances": {
+    "key": "L-ALERTINST",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-manage-alert-instances",
+    "updated": "2026-06-23T17:15:00Z"
+  },
   "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview": {
     "key": "L-ALERTS",
     "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-overview",
@@ -14,6 +19,11 @@
     "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/app/create-workspace-resource",
     "updated": "2026-10-09T22:14:00Z"
   },
+  "https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/tutorial-metrics": {
+    "key": "L-METRICSTUT",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/tutorial-metrics",
+    "updated": "2026-09-22T06:04:00Z"
+  },
   "https://learn.microsoft.com/en-us/azure/azure-monitor/fundamentals/azure-monitor-network-access": {
     "key": "L-MONNET",
     "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/fundamentals/azure-monitor-network-access",
@@ -23,6 +33,11 @@
     "key": "L-LARET",
     "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-retention-configure",
     "updated": "2026-09-29T22:18:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/quick-create-workspace": {
+    "key": "L-LAWQS",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/logs/quick-create-workspace",
+    "updated": "2026-09-22T06:04:00Z"
   },
   "https://learn.microsoft.com/en-us/azure/azure-monitor/platform/activity-log": {
     "key": "L-ACTLOG",
@@ -44,6 +59,11 @@
     "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/appavailabilityresults",
     "updated": "2026-07-28T17:16:00Z"
   },
+  "https://learn.microsoft.com/en-us/azure/azure-portal/azure-portal-overview": {
+    "key": "L-PORTAL",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-portal/azure-portal-overview",
+    "updated": "2026-04-07T06:02:00Z"
+  },
   "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/async-operations": {
     "key": "L-ASYNC",
     "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/async-operations",
@@ -52,6 +72,11 @@
   "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal": {
     "key": "L-RGPORTAL",
     "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resource-groups-portal",
+    "updated": "2026-03-04T23:27:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resources-portal": {
+    "key": "L-RESPORTAL",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resources-portal",
     "updated": "2026-03-04T23:27:00Z"
   },
   "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/move-resource-group-and-subscription": {
@@ -63,6 +88,11 @@
     "key": "L-NAMES",
     "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-name-rules",
     "updated": "2026-08-07T17:22:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-portal": {
+    "key": "L-DEPLOYPORTAL",
+    "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deploy-portal",
+    "updated": "2026-06-26T22:12:00Z"
   },
   "https://learn.microsoft.com/en-us/azure/azure-resource-manager/templates/deployment-history": {
     "key": "L-DEPHIST",
@@ -84,9 +114,19 @@
     "url": "https://learn.microsoft.com/en-us/azure/container-apps/firewall-integration",
     "updated": "2026-05-19T22:14:00Z"
   },
+  "https://learn.microsoft.com/en-us/azure/network-watcher/diagnose-vm-network-traffic-filtering-problem": {
+    "key": "L-NWQS",
+    "url": "https://learn.microsoft.com/en-us/azure/network-watcher/diagnose-vm-network-traffic-filtering-problem",
+    "updated": "2026-02-25T23:33:00Z"
+  },
   "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview": {
     "key": "L-IPFV",
     "url": "https://learn.microsoft.com/en-us/azure/network-watcher/ip-flow-verify-overview",
+    "updated": "2026-07-31T19:23:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/network-watcher/view-network-topology": {
+    "key": "L-TOPOLOGY",
+    "url": "https://learn.microsoft.com/en-us/azure/network-watcher/view-network-topology",
     "updated": "2026-07-31T19:23:00Z"
   },
   "https://learn.microsoft.com/en-us/azure/reliability/regions-list": {
@@ -184,6 +224,11 @@
     "url": "https://learn.microsoft.com/en-us/azure/virtual-network/diagnose-network-traffic-filter-problem",
     "updated": "2026-10-08T05:11:00Z"
   },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/create-public-ip-portal": {
+    "key": "L-PIPPORTAL",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/create-public-ip-portal",
+    "updated": "2026-01-22T19:36:00Z"
+  },
   "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/default-outbound-access": {
     "key": "L-OUTBOUND",
     "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/default-outbound-access",
@@ -209,6 +254,11 @@
     "url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group",
     "updated": "2025-10-08T22:11:00Z"
   },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network": {
+    "key": "L-VNETMAN",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-virtual-network",
+    "updated": "2025-10-08T22:11:00Z"
+  },
   "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works": {
     "key": "L-NSGHOW",
     "url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-group-how-it-works",
@@ -223,6 +273,26 @@
     "key": "L-SVCTAGS",
     "url": "https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview",
     "updated": "2026-09-17T17:12:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/tutorial-filter-network-traffic": {
+    "key": "L-NSGTUT",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/tutorial-filter-network-traffic",
+    "updated": "2026-02-03T06:44:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet": {
+    "key": "L-SUBNETMAN",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-manage-subnet",
+    "updated": "2026-04-09T17:25:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-network-interface": {
+    "key": "L-NICMAN",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-network-interface",
+    "updated": "2025-10-08T22:11:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-network-interface-vm": {
+    "key": "L-NICVM",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-network-interface-vm",
+    "updated": "2025-10-08T22:11:00Z"
   },
   "https://learn.microsoft.com/en-us/azure/virtual-network/virtual-network-vnet-plan-design-arm": {
     "key": "L-PLAN",
