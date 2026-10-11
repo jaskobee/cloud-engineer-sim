@@ -1,3 +1,4 @@
+import { selectedIdOf } from '../store/gameStore.ts'
 import { useEffect, useId, useRef, useState } from 'react'
 import { azure, type AvailabilityResult } from '../engine/index.ts'
 import { formatSimTime } from './format.ts'
@@ -12,7 +13,7 @@ const HOUR = 3_600_000
 
 export function AvailabilityPanel() {
   const resources = useGame(s => s.world.tenant.resources)
-  const selectedId = useGame(s => s.session.ui.selectedId)
+  const selectedId = useGame(selectedIdOf)
   const tests = Object.values(resources).filter(r => r.type.toLowerCase() === azure.WEBTEST_TYPE.toLowerCase()).sort((a, b) => a.name.localeCompare(b.name))
   const [chosen, setChosen] = useState('')
   const fieldId = useId()

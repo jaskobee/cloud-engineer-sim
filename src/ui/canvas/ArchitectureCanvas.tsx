@@ -3,7 +3,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useContext, useMemo } from 'react'
-import { FLOW_SELECTION_PREFIX, type CanvasLayer } from '../../store/gameStore.ts'
+import { FLOW_SELECTION_PREFIX, selectedIdOf, type CanvasLayer } from '../../store/gameStore.ts'
 import { GameStoreContext, useGame } from '../gameContext.ts'
 import { TrafficEdge } from './CanvasEdges.tsx'
 import { BoxNode, CardNode, type BoxFlowNode, type CardFlowNode } from './CanvasNodes.tsx'
@@ -56,7 +56,7 @@ export function ArchitectureCanvas() {
   const graph = useCanvasGraph()
   const layer = useGame(s => s.session.ui.canvas.layer)
   const setLayer = useGame(s => s.setCanvasLayer)
-  const selectedId = useGame(s => s.session.ui.selectedId)
+  const selectedId = useGame(selectedIdOf)
   const select = useGame(s => s.select)
   const startCreate = useGame(s => s.startCreate)
   const watchedCount = useWatchedFlows().length

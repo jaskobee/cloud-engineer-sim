@@ -12,6 +12,7 @@ import {
   type World,
 } from '../engine/index.ts'
 import { registryFor, runtimeFor } from '../missions/index.ts'
+import { CHILD_KINDS, initialNav, routeForResource, sameRoute, type ContextPane, type Nav, type Route } from '../ui/portal/route.ts'
 
 /** Who the player is in the activity log (`caller`, MON-9). Mission data may override it later. */
 export const PLAYER_PRINCIPAL = 'engineer@pixelforge.example'
@@ -69,9 +70,8 @@ export const FLOW_SELECTION_PREFIX = 'flow:'
 export interface Session {
   ui: {
     bottomTab: BottomTab
-    /** An ARM ID, or `flow:<id>` for a watched flow. */
-    selectedId: ArmId | null
-    creating: CreateRequest | null
+    /** Where the player is in the portal shell: route, back stack, map, side pane, ticket (spec §5). */
+    nav: Nav
     canvas: { layer: CanvasLayer; watched: WatchedFlow[] }
     /** Mission messages the player has seen; newer ones count as unread. */
     seenMessages: number
@@ -94,8 +94,20 @@ export interface GameState {
   /** Advance by real elapsed milliseconds (scaled by speed, nothing while paused). */
   tick(realMs: number): void
   selectTab(tab: BottomTab): void
+  /** Go to a page. The current one goes on the back stack (unless it's the same page); map and side pane close. */
+  navigate(route: Route): void
+  goBack(): void
+  toggleMap(on?: boolean): void
+  openContextPane(pane: ContextPane): void
+  closeContextPane(): void
+  setTicketOpen(open: boolean): void
+  markNotificationsSeen(simMs: number): void
+  /** Open a resource where the portal shows it (a child resource on its parent's page); null goes back. */
   select(id: ArmId | null): void
-  /** Open the create panel (or close it with null). Opening it clears the selection. */
+  /**
+   * Create something: null closes the form (side pane, or back from a wizard), kind null opens
+   * "Create a resource", a child kind opens its side pane, anything else its wizard.
+   */
   startCreate(request: CreateRequest | null): void
   setCanvasLayer(layer: CanvasLayer): void
   /** Watch a connection on the canvas (the same connection twice is kept once) and select it. */
@@ -108,6 +120,20 @@ export interface GameState {
 export type GameStore = StoreApi<GameState>
 
 const DEFAULT_REGISTRY = registryFor(undefined)
+
+const BACK_LIMIT = 50
+const HOME_ROUTE: Route = { page: 'home' }
+const withNav = (s: GameState, nav: Nav): Partial<GameState> => ({ session: { ...s.session, ui: { ...s.session.ui, nav } } })
+
+/**
+ * What the player is looking at, as an ID: the open flow (`flow:<id>`) or the route's resource. Replaces
+ * the old inspector selection for the canvas and the tool panels.
+ */
+export function selectedIdOf(state: Pick<GameState, 'session'>): ArmId | null {
+  const { nav } = state.session.ui
+  if (nav.contextPane?.kind === 'flow') return `${FLOW_SELECTION_PREFIX}${nav.contextPane.flowId}`
+  return nav.route.page === 'resource' ? nav.route.id : null
+}
 
 /** A fresh sandbox world: empty apart from the sandbox subscription. Deterministic for a seed. */
 export function newWorld(seed: string): World {
@@ -134,7 +160,7 @@ export function createGameStore({ world, registry }: { world: World; registry?: 
     return {
       world,
       session: {
-        ui: { bottomTab: 'activity-log', selectedId: null, creating: null, canvas: { layer: 'network', watched: [] }, seenMessages: 0, info: null },
+        ui: { bottomTab: 'activity-log', nav: initialNav(), canvas: { layer: 'network', watched: [] }, seenMessages: 0, info: null },
       },
       lastRefusal: null,
 
@@ -158,12 +184,55 @@ export function createGameStore({ world, registry }: { world: World; registry?: 
         set(s => ({ session: { ...s.session, ui: { ...s.session.ui, bottomTab: tab } } }))
       },
 
+      navigate(route) {
+        set(s => {
+          const { nav } = s.session.ui
+          const back = sameRoute(nav.route, route) ? nav.back : [...nav.back, nav.route].slice(-BACK_LIMIT)
+          return withNav(s, { ...nav, route, back, map: false, contextPane: null })
+        })
+      },
+
+      goBack() {
+        set(s => {
+          const { nav } = s.session.ui
+          const route = nav.back.at(-1) ?? HOME_ROUTE
+          return withNav(s, { ...nav, route, back: nav.back.slice(0, -1), map: false, contextPane: null })
+        })
+      },
+
+      toggleMap(on) {
+        set(s => withNav(s, { ...s.session.ui.nav, map: on ?? !s.session.ui.nav.map }))
+      },
+
+      openContextPane(pane) {
+        set(s => withNav(s, { ...s.session.ui.nav, contextPane: pane }))
+      },
+
+      closeContextPane() {
+        set(s => withNav(s, { ...s.session.ui.nav, contextPane: null }))
+      },
+
+      setTicketOpen(open) {
+        set(s => withNav(s, { ...s.session.ui.nav, ticketOpen: open }))
+      },
+
+      markNotificationsSeen(simMs) {
+        if (get().session.ui.nav.notificationsSeenAt >= simMs) return
+        set(s => withNav(s, { ...s.session.ui.nav, notificationsSeenAt: simMs }))
+      },
+
       select(id) {
-        set(s => ({ session: { ...s.session, ui: { ...s.session.ui, selectedId: id, creating: id === null ? s.session.ui.creating : null } } }))
+        if (id === null) return get().goBack()
+        if (id.startsWith(FLOW_SELECTION_PREFIX)) return get().openContextPane({ kind: 'flow', flowId: id.slice(FLOW_SELECTION_PREFIX.length) })
+        get().navigate(routeForResource(id, get().world))
       },
 
       startCreate(request) {
-        set(s => ({ session: { ...s.session, ui: { ...s.session.ui, creating: request, selectedId: request ? null : s.session.ui.selectedId } } }))
+        const { nav } = get().session.ui
+        if (request === null) return nav.contextPane ? get().closeContextPane() : get().goBack()
+        if (request.kind === null) return get().navigate({ page: 'createPicker' })
+        if (CHILD_KINDS.includes(request.kind)) return get().openContextPane({ kind: 'create', request })
+        get().navigate({ page: 'create', kind: request.kind, tab: 'basics', ...(request.preset ? { preset: request.preset } : {}) })
       },
 
       setCanvasLayer(layer) {
@@ -175,20 +244,22 @@ export function createGameStore({ world, registry }: { world: World; registry?: 
         set(s => {
           const { canvas } = s.session.ui
           const watched = canvas.watched.some(w => w.id === id) ? canvas.watched : [...canvas.watched, { ...flow, id }]
-          return { session: { ...s.session, ui: { ...s.session.ui, creating: null, selectedId: `${FLOW_SELECTION_PREFIX}${id}`, canvas: { ...canvas, watched } } } }
+          const nav: Nav = { ...s.session.ui.nav, contextPane: { kind: 'flow', flowId: id } }
+          return { session: { ...s.session, ui: { ...s.session.ui, nav, canvas: { ...canvas, watched } } } }
         })
         return id
       },
 
       unwatchFlow(id) {
         set(s => {
-          const { canvas, selectedId } = s.session.ui
+          const { canvas, nav } = s.session.ui
+          const showing = nav.contextPane?.kind === 'flow' && nav.contextPane.flowId === id
           return {
             session: {
               ...s.session,
               ui: {
                 ...s.session.ui,
-                selectedId: selectedId === `${FLOW_SELECTION_PREFIX}${id}` ? null : selectedId,
+                nav: showing ? { ...nav, contextPane: null } : nav,
                 canvas: { ...canvas, watched: canvas.watched.filter(w => w.id !== id) },
               },
             },

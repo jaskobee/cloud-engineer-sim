@@ -1,3 +1,4 @@
+import { selectedIdOf } from '../store/gameStore.ts'
 import { useContext, useId, useState, type ReactNode } from 'react'
 import { azure, type ArmId, type Resource, type World } from '../engine/index.ts'
 import { GameStoreContext, useGame } from './gameContext.ts'
@@ -134,7 +135,7 @@ const PROTOCOL_LABEL: Record<string, string> = { '*': 'Any', Tcp: 'TCP', Udp: 'U
 
 export function EffectiveRulesPanel() {
   const world = useNetworkWorld()
-  const selectedId = useGame(s => s.session.ui.selectedId)
+  const selectedId = useGame(selectedIdOf)
   const nics = azure.resourcesOfType(world, azure.NIC_TYPE)
   // Follow the selection: a selected NIC, or the NIC of a selected VM.
   const fromSelection = (() => {

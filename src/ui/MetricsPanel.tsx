@@ -1,3 +1,4 @@
+import { selectedIdOf } from '../store/gameStore.ts'
 import { useId, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import { azure } from '../engine/index.ts'
 import { formatBytes, formatSimTime, niceCeil } from './format.ts'
@@ -24,7 +25,7 @@ const formatValue = (unit: Unit, v: number) => (unit === 'percent' ? `${v % 1 ==
 export function MetricsPanel() {
   const resources = useGame(s => s.world.tenant.resources)
   const vms = Object.values(resources).filter(r => r.type.toLowerCase() === azure.VM_TYPE.toLowerCase()).sort((a, b) => a.name.localeCompare(b.name))
-  const selectedId = useGame(s => s.session.ui.selectedId)
+  const selectedId = useGame(selectedIdOf)
   const [chosen, setChosen] = useState('')
   // The VM picked here, else the VM selected in the workspace, else the first one.
   const vm = vms.find(v => v.id === chosen) ?? vms.find(v => selectedId !== null && azure.armKey(v.id) === azure.armKey(selectedId)) ?? vms[0]

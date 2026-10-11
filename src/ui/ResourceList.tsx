@@ -1,3 +1,4 @@
+import { selectedIdOf } from '../store/gameStore.ts'
 import { azure, type ArmId, type Resource, type Tenant } from '../engine/index.ts'
 import { useGame } from './gameContext.ts'
 import { typeLabel } from './resourceKinds.ts'
@@ -9,7 +10,7 @@ import { typeLabel } from './resourceKinds.ts'
  */
 export function ResourceList() {
   const tenant = useGame(s => s.world.tenant)
-  const selectedId = useGame(s => s.session.ui.selectedId)
+  const selectedId = useGame(selectedIdOf)
   const select = useGame(s => s.select)
   const groups = Object.values(tenant.resourceGroups)
 

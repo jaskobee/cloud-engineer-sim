@@ -6,7 +6,7 @@ import { CreatePanel } from './CreatePanel.tsx'
 import { Inspector } from './Inspector.tsx'
 import { ResourceList } from './ResourceList.tsx'
 import { FlowInspector } from './canvas/FlowInspector.tsx'
-import { FLOW_SELECTION_PREFIX } from '../store/gameStore.ts'
+import { FLOW_SELECTION_PREFIX, selectedIdOf, type CreateRequest } from '../store/gameStore.ts'
 import { useMediaQuery } from './useMediaQuery.ts'
 import { GameStoreContext, useGame } from './gameContext.ts'
 import { TimeControls } from './TimeControls.tsx'
@@ -126,7 +126,7 @@ function CanvasBody() {
 
 /** Remounts when what it shows changes, so each resource or form opens scrolled to the top. */
 function InspectorPane() {
-  const key = useGame(s => s.session.ui.creating ? `create:${JSON.stringify(s.session.ui.creating)}` : `select:${s.session.ui.selectedId ?? ''}`)
+  const key = useGame(s => JSON.stringify([s.session.ui.nav.route, s.session.ui.nav.contextPane]))
   return (
     <aside key={key} className="pane pane-inspector" aria-label="Inspector">
       <InspectorBody />
@@ -135,9 +135,15 @@ function InspectorPane() {
 }
 
 function InspectorBody() {
-  const selected = useGame(s => s.session.ui.selectedId)
-  const creating = useGame(s => s.session.ui.creating)
-  if (creating) return <CreatePanel request={creating} />
+  const selected = useGame(selectedIdOf)
+  const creating = useGame(s => {
+    const { route, contextPane } = s.session.ui.nav
+    if (contextPane?.kind === 'create') return JSON.stringify(contextPane.request)
+    if (route.page === 'createPicker') return JSON.stringify({ kind: null })
+    if (route.page === 'create') return JSON.stringify({ kind: route.kind, ...(route.preset ? { preset: route.preset } : {}) })
+    return null
+  })
+  if (creating) return <CreatePanel request={JSON.parse(creating) as CreateRequest} />
   if (selected?.startsWith(FLOW_SELECTION_PREFIX)) return <FlowInspector flowId={selected.slice(FLOW_SELECTION_PREFIX.length)} />
   if (selected !== null) return <Inspector id={selected} />
   return (
