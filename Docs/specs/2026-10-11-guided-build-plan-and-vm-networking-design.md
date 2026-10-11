@@ -1,6 +1,8 @@
 # Guided build plan and portal-accurate VM networking: design (2026-10-11)
 
-Status: **draft for Jasko's review**. Plan style chosen in chat: **Exact recipe**.
+Status: **approved by Jasko on 2026-10-11, implemented (D-8)**. Plan style chosen in chat: **Exact recipe**. Plan: `Docs/plans/2026-10-11-guided-build-plan-and-vm-networking.md`.
+
+Deviations while building: the spec's step 1 ("look around") became the plan's intro plus a derived "Already in the subscription" list; monitoring is two steps (resources, then test + alert), so the plan has 12 steps; the NSG-rule steps count rules (reachability stays with the objectives, rule 5); rule priorities follow the objectives' hints (HTTPS 200, SSH 210); Standard mode's hints don't point at plan steps.
 
 ## 1. Why
 

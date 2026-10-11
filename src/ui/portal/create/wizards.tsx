@@ -187,6 +187,7 @@ export const WIZARDS: Record<string, WizardDef> = {
               <TextField label="Username" required value={values.adminUsername ?? ''} onChange={x => set('adminUsername', x)} placeholder="pixelops"
                 hint="1 to 32 characters. Names like admin, root or test aren't allowed." />
             </FormSection>
+            {/* PORTAL-19, PORTAL-20s */}
             <FormSection title="Inbound port rules">
               <FixedField label="Public inbound ports" value="None" hint="All public inbound ports are closed for this virtual machine." />
               <SimNote>The portal also offers Allow selected ports. The simulator doesn't model the rules that option creates: allow traffic with a network security group instead.</SimNote>

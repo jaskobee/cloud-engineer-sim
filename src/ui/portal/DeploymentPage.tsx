@@ -59,7 +59,7 @@ export function DeploymentPage({ id }: { id: string }) {
           </tbody>
         </table>
       </div>
-      <p className="form-section-hint"><span className="sim-label">Simulator</span> Provisioning times are made up and shortened. Real ones vary.</p>
+      <p className="form-section-hint"><span className="sim-label">Simulator</span> Provisioning times are made up and shortened. Real ones vary. Operations run one after another here, and every resource shows Creating from the start (ARM-15s).</p>
       <div className="wizard-footer is-inline">
         <Button appearance="primary" disabled={running || !world.tenant.resources[azure.armKey(target)]} onClick={() => navigate(routeForResource(target, world))} data-guide="deployment:goToResource">
           Go to resource
@@ -72,7 +72,7 @@ export function DeploymentPage({ id }: { id: string }) {
 /** One row per resource an operation touches (Operation details, PORTAL-9), in the order the operations run (ARM-15s). */
 function operationRows(op: DeploymentOperation, now: number) {
   const status = op.completedAt !== undefined ? 'Succeeded' : op.startsAt <= now ? 'Running' : 'Waiting'
-  const label = status === 'Running' ? 'In progress' : status === 'Waiting' ? 'Waiting for the previous step' : status
+  const label = status === 'Running' ? 'In progress' : status === 'Waiting' ? 'Waiting (simulator)' : status
   const rows: [string, string][] = [
     ...op.created.map(r => [r, 'Create'] as [string, string]), ...op.updated.map(r => [r, 'Update'] as [string, string]), ...op.deleted.map(r => [r, 'Delete'] as [string, string]),
   ]

@@ -212,6 +212,20 @@ in its own storage key). `src/ui/portal/`:
   no label. `data-guide` attributes mark the controls Guided paths highlight (`guide.ts`, `PortalPath.tsx`).
 - Mission data may carry `portalPath` (objectives, stages) and `roles` (find resources by relationship, like checks).
 
+## Guided build plan and VM networking (D-8)
+
+Spec `Docs/specs/2026-10-11-guided-build-plan-and-vm-networking-design.md`. **Multi-resource deployments**:
+`DEPLOYMENT_COMMAND` (`arm/deployments/write`, payload `{ resources: [{ type, payload }] }`) is handled by `dispatch` /
+`dryRun` themselves (`plan()` in `commands.ts`): writes are validated and applied in order, so a write may reference a
+resource created earlier in the same deployment; one refusal refuses all. `Deployment.operations[]` run one after
+another (ARM-8, ARM-15s), each logging its own Started/Succeeded; `mainOperation(d)` is the last one; outcomes carry
+`deploymentId`. World schema v2 (T-10, migration in `save.ts`). **VM wizard** (PORTAL-19, PORTAL-20, PORTAL-20s):
+Networking (`create/VmNetworking.tsx`) creates `<vm>-ip` (or None) and `<vm>-nic` with the VM. **Build plan**:
+`MissionDef.buildPlan` (`BuildStep`: settings with value/why/rules, `portalPath`, `done(world)` by relationships),
+`currentBuildStep`; mission 1's is `src/missions/pixelforge-build-plan.ts`, shown by `src/ui/BuildPlan.tsx` in Guided
+only (its step is the one thing that glows). **Created by** (PORTAL-21s): `creatorOf(activityLog, id)` +
+`ui/portal/callers.ts`. Create wizards preselect no resource group.
+
 ## Azure QA (accuracy checks against Microsoft Learn)
 
 Two layers check that the game teaches Azure correctly:

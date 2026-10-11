@@ -32,15 +32,15 @@ const set = (label: string, value: string, why: string, rules: string[]): BuildS
 const REGION_SETTING = set('Region', 'West Europe', 'The players are in the EU. A virtual network and everything in it live in one region.', ['VNET-1', 'NIC-1'])
 
 const vmSettings = (name: string, subnet: string, publicIp: string, publicIpWhy: string): BuildSetting[] => [
-  set('Resource group', 'rg-pixelforge-prod', 'Keep production together, apart from Mia\'s test group.', ['PORTAL-6']),
+  set('Resource group', 'rg-pixelforge-prod', 'Keep production together, apart from Mia\'s test group.', ['NAME-1']),
   set('Virtual machine name', name, 'Says what it is and leaves room for a second one later.', ['VM-1']),
   REGION_SETTING,
   set('Image', 'Ubuntu Server 22.04 LTS', 'The only image the simulator offers; the client\'s apps run on Linux.', ['VM-12', 'VM-12s']),
-  set('Size', 'Standard_B2s_v2', 'Burstable and cheap: a beta has spiky load and the budget is tight. 2 vCPUs, 8 GiB.', ['VM-13']),
+  set('Size', 'Standard_B2s_v2', 'Burstable: it builds up CPU credits while load is low and spends them during peaks, which suits a beta\'s spiky traffic. 2 vCPUs, 8 GiB.', ['VM-13']),
   set('Authentication type', 'SSH public key', 'Keys instead of passwords for Linux admin access.', ['VM-4', 'VM-3s']),
   set('Username', 'pixelops', 'Names like admin or root aren\'t allowed.', ['VM-2']),
   set('Public inbound ports', 'None', 'The subnet\'s network security group controls what gets in, with your rules.', ['PORTAL-19', 'NSG-7']),
-  set('OS disk type (Disks tab)', 'Standard SSD', 'Reliable enough for a beta, cheaper than Premium SSD.', ['VM-10', 'VM-11']),
+  set('OS disk type (Disks tab)', 'Standard SSD', 'Learn suggests Standard SSD for web servers and dev/test, Premium SSD for production workloads that need high performance. For a budget beta, Standard SSD is the trade-off we accept.', ['VM-20', 'VM-10']),
   set('Virtual network / Subnet (Networking tab)', `vnet-pixelforge-prod / ${subnet}`, 'The subnet decides which network security group protects the VM.', ['PORTAL-20', 'NSG-7']),
   set('Public IP', publicIp, publicIpWhy, ['PORTAL-20', 'PIP-10s']),
   set('NIC network security group', 'None', 'One NSG per subnet is enough: inbound traffic must pass every NSG on the path.', ['PORTAL-20', 'NSG-7', 'NSG-12']),
@@ -98,9 +98,9 @@ export const BUILD_PLAN: BuildPlan = {
     {
       id: 'game-rules',
       title: 'Add the game subnet\'s inbound rules',
-      intro: 'On nsg-snet-game, add two inbound security rules. Everything else stays denied by DenyAllInbound (65500).',
+      intro: 'On nsg-snet-game, add two inbound security rules. Anything else from the internet stays denied by DenyAllInbound (65500); traffic from inside the virtual network is still allowed by AllowVNetInBound (65000).',
       settings: [
-        set('Allow-HTTPS', 'Source Service Tag Internet, TCP, destination port 443, Allow, priority 200', 'Players connect over HTTPS from anywhere. A Standard public IP lets nothing in until a rule allows it.', ['PIP-1', 'NSG-11']),
+        set('Allow-HTTPS', 'Source Service Tag Internet, TCP, destination port 443, Allow, priority 200', 'Players connect over HTTPS from anywhere. A Standard public IP lets nothing in until a rule allows it.', ['PIP-1', 'NSG-11', 'NSG-3']),
         set('Allow-SSH-Office', `Source IP Addresses ${OFFICE_IP}, TCP, destination port 22, Allow, priority 210`, 'Admin SSH only from the office, never from the whole internet.', ['NSG-1', 'NSG-11']),
       ],
       portalPath: [svc('networkSecurityGroups', 'Network security groups'), res('nsgToFill', 'nsg-snet-game'), sec('inbound', 'Inbound security rules', 'PORTAL-12'), anchorStep('nsg:inbound:add', '+ Add', 'PORTAL-12')],
@@ -135,7 +135,7 @@ export const BUILD_PLAN: BuildPlan = {
       id: 'game-vm',
       title: 'Create the game server VM',
       intro: 'Create a virtual machine. The Networking tab creates its network interface and a public IP with it, in one deployment.',
-      settings: vmSettings('vm-game-01', 'snet-game', '(new) vm-game-01-ip', 'Players on the internet reach the game API only through a public IP.'),
+      settings: vmSettings('vm-game-01', 'snet-game', '(new) vm-game-01-ip', 'Players on the internet need a way in. In this simulator that\'s a public IP on the VM\'s network interface (load balancers and other front ends aren\'t modelled).'),
       portalPath: [svc('virtualMachines', 'Virtual machines'), anchorStep('create:virtualMachine', 'Create', 'PORTAL-6'), anchorStep('tab:networking', 'Networking', 'PORTAL-20'), anchorStep('wizard:review', 'Review + create', 'PORTAL-6')],
       done: w => vms(w).some(vm => publicIpOf(w, vm) !== undefined),
     },
@@ -143,7 +143,7 @@ export const BUILD_PLAN: BuildPlan = {
       id: 'db-vm',
       title: 'Create the database VM',
       intro: 'Same as the game server, in the data subnet, and without a public IP.',
-      settings: vmSettings('vm-db-01', 'snet-data', 'None', 'The database must never be reachable from the internet. Without a public IP it can\'t be.'),
+      settings: vmSettings('vm-db-01', 'snet-data', 'None', 'The database must never be reachable from the internet: give it no public IP, and point no other public front end at it.'),
       portalPath: [svc('virtualMachines', 'Virtual machines'), anchorStep('create:virtualMachine', 'Create', 'PORTAL-6'), anchorStep('tab:networking', 'Networking', 'PORTAL-20'), anchorStep('wizard:review', 'Review + create', 'PORTAL-6')],
       done: w => vms(w).some(vm => publicIpOf(w, vm) === undefined),
     },
@@ -164,7 +164,7 @@ export const BUILD_PLAN: BuildPlan = {
       intro: 'Application Insights runs availability tests and keeps their results in a Log Analytics workspace.',
       settings: [
         set('Log Analytics workspace', 'log-pixelforge-prod, West Europe', 'Where the monitoring data is stored. It costs nothing until data comes in.', ['MON-5', 'MON-30']),
-        set('Application Insights', 'appi-pixelforge-prod, workspace log-pixelforge-prod', 'Application Insights is workspace-based: it needs the workspace first.', ['MON-5']),
+        set('Application Insights', 'appi-pixelforge-prod, workspace log-pixelforge-prod', 'Application Insights sends its data to a Log Analytics workspace: pick the one you just created. (The portal would create a new one if you didn\'t; the simulator asks for an existing one.)', ['MON-5', 'MON-31s']),
       ],
       portalPath: [svc('logAnalytics', 'Log Analytics workspaces'), anchorStep('create:workspace', 'Create', 'PORTAL-6'), svc('applicationInsights', 'Application Insights'), anchorStep('create:component', 'Create', 'PORTAL-6')],
       done: w => ofType(w, azure.WORKSPACE_TYPE).length > 0 && ofType(w, azure.COMPONENT_TYPE).length > 0,

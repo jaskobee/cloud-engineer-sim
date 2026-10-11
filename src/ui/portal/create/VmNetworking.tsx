@@ -36,16 +36,17 @@ export function VmNetworking({ values, set, world }: TabProps) {
     <FormSection title="Network interface" hint="When you create a VM in the portal, a network interface is created for it here.">
       <SelectField label="Virtual network" required value={vnetId} onChange={pickVnet}
         options={vnets.map(n => [n.id, `${n.name} (${azure.parseArmId(n.id)?.resourceGroupName ?? ''})`])}
-        {...(vnets.length === 0 ? { hint: `No virtual network in ${azure.regionDisplayName(values.location ?? 'westeurope')} yet. Create one first.` } : {})} />
+        {...(vnets.length === 0 ? { hint: `No virtual network in ${azure.regionDisplayName(values.location ?? 'westeurope')} yet.` } : {})} />
+      <SimNote>The portal can also create a new virtual network from here. The simulator doesn't model that: create the virtual network and its subnets first.</SimNote>
       <SelectField label="Subnet" required value={values.subnetId ?? ''} onChange={x => set('subnetId', x)}
         options={subnets.map(s => [s.id, `${s.name} (${String(s.properties.addressPrefix)})`])}
         {...(vnetId && subnets.length === 0 ? { hint: 'This virtual network has no subnet yet. Add one under Subnets.' } : {})} />
       <SelectField label="Public IP" value={values.publicIp === 'none' ? 'none' : 'new'} onChange={x => set('publicIp', x)}
         options={[['new', `(new) ${pipName || 'public IP named after the VM'}`], ['none', 'None']]}
-        hint="Internet clients reach the VM only through a public IP. Leave it out for VMs nobody outside should reach." />
+        hint="In this simulator, internet clients reach a VM only through a public IP on its network interface (load balancers aren't modelled). Choose None for VMs nobody outside should reach." />
       <Link as="button" className="create-new-link" onClick={() => setDialog(true)} data-guide="vm:createPublicIp">Create new</Link>
       <FixedField label="NIC network security group" value="None" />
-      <SimNote>The portal also offers Advanced, to create or pick a network security group for this network interface. The simulator doesn't model it here: associate an NSG with the subnet or the network interface afterwards.</SimNote>
+      <SimNote>In the portal this setting can give the new network interface its own network security group (Learn: an NSG named after the VM with -nsg; Advanced lets you create or pick one). The simulator doesn't model that here: associate an NSG with the subnet or the network interface afterwards.</SimNote>
       <FixedField label="Network interface name" value={values.name ? nicNameFor(values.name) : ''} hint="Simulator default name: the portal picks its own." />
       {dialog && <PublicIpDialog initial={pipName} onCancel={() => setDialog(false)} onOk={name => { set('publicIp', 'new'); set('publicIpName', name); setDialog(false) }} />}
     </FormSection>
