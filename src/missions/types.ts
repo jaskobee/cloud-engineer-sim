@@ -23,6 +23,24 @@ export interface CheckResult {
   detail: string
 }
 
+/**
+ * Where a portal path step leads (D-7): a service, "Create a resource", a resource found by role (how the
+ * mission's checks find it: by relationships, never by name), a section of the resource before it, or a
+ * control on the page (`data-guide` id) to highlight.
+ */
+export type PathTarget =
+  | { kind: 'service'; id: string }
+  | { kind: 'resource'; role: string }
+  | { kind: 'section'; section: string }
+  | { kind: 'anchor'; id: string }
+
+/** One step of a Guided portal path. Every label cites the PORTAL rule that backs it. */
+export interface PathStep {
+  label: string
+  rule: string
+  target: PathTarget
+}
+
 export interface ObjectiveDef {
   id: string
   /** The client's words (Standard and Expert modes). */
@@ -36,6 +54,8 @@ export interface ObjectiveDef {
   rules: readonly string[]
   /** INFO topics (`info.ts`) that explain the concepts behind it. */
   info: readonly string[]
+  /** The portal path to do it (Guided shows it; Standard shows it with the hints; Expert never). */
+  portalPath?: readonly PathStep[]
 }
 
 export interface MessageDef {
@@ -73,6 +93,8 @@ export interface StageDef {
   acceptsReport?: boolean
   /** A hint ladder for the stage itself (e.g. the incident), direction → exact step. */
   hints?: readonly string[]
+  /** Where to look in the portal for this stage (e.g. the incident's evidence). */
+  portalPath?: readonly PathStep[]
 }
 
 /**
@@ -119,6 +141,8 @@ export interface MissionDef {
   stages: readonly StageDef[]
   report: ReportDef
   certifications: readonly string[]
+  /** Finds the resources portal paths point at, by role (relationships, like the checks). Null: not there yet. */
+  roles?: Readonly<Record<string, (world: World) => string | null>>
   /** The connections to watch on the canvas, found by role in the current world. */
   watchedFlows?: (world: World) => MissionFlow[]
   /** The architecture review shown at the end (MVP §32): graded items, each with the reason. */

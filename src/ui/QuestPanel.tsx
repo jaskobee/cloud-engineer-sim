@@ -1,12 +1,13 @@
 import { useContext, useId, useMemo, useState } from 'react'
 import { ASSISTANCE_MODES, type AssistanceMode, type MissionMessage, type Refusal } from '../engine/index.ts'
-import { hintsUsed, infoTopic, INFO_TOPICS, judgeReport, levelFor, missionResult, MISSIONS, objectiveStatus, recordRun, runIdOf, type MissionDef, type ObjectiveDef, type StageDef } from '../missions/index.ts'
+import { hintsUsed, infoTopic, INFO_TOPICS, judgeReport, levelFor, missionResult, MISSIONS, objectiveStatus, recordRun, runIdOf, type MissionDef, type ObjectiveDef, type PathStep, type StageDef } from '../missions/index.ts'
 import { formatSimTime } from './format.ts'
 import { GameStoreContext, useGame } from './gameContext.ts'
 import { InfoButton } from './Info.tsx'
 import { MODE_TEXT } from './modes.ts'
 import { browserStorage, readProfile } from '../store/persistence.ts'
 import { RefusalNotice } from './RefusalNotice.tsx'
+import { PortalPath } from './portal/PortalPath.tsx'
 
 /**
  * The quest panel (step 10): the client's ticket and messages, where the mission is, what's left to do,
@@ -51,6 +52,7 @@ function MissionQuest({ def }: { def: MissionDef }) {
         <p>{stage.goal}</p>
       </section>
       <Inbox def={def} />
+      {stage.portalPath && !completed && <ObjectivePath def={def} hintKey={`stage/${stage.id}`} steps={stage.portalPath} mode={mode} highlight={stage.objectives.length === 0} />}
       {stage.hints && stage.hints.length > 0 && <Hints hintKey={`stage/${stage.id}`} hints={stage.hints} mode={mode} />}
       {stage.objectives.length > 0 && <Objectives def={def} stage={stage} mode={mode} />}
       {stage.acceptsReport && <ReportForm def={def} mode={mode} />}
@@ -113,6 +115,7 @@ function Objectives({ def, stage, mode }: { def: MissionDef; stage: StageDef; mo
                 <p className="objective-info">
                   {o.info.map(t => <InfoButton key={t} topic={t} label={infoTopic(t)?.title ?? t} />)}
                 </p>
+                {!done && o.portalPath && <ObjectivePath def={def} hintKey={o.id} steps={o.portalPath} mode={mode} highlight={isNext} />}
                 {!done && <Hints hintKey={o.id} hints={o.hints} mode={mode} compact />}
               </div>
             </li>
@@ -121,6 +124,16 @@ function Objectives({ def, stage, mode }: { def: MissionDef; stage: StageDef; mo
       </ul>
     </section>
   )
+}
+
+/**
+ * Where to do it in the portal (D-7): always in Guided (the next step glows), in Standard once a hint for it is
+ * open, never in Expert.
+ */
+function ObjectivePath({ def, hintKey, steps, mode, highlight }: { def: MissionDef; hintKey: string; steps: readonly PathStep[]; mode: AssistanceMode; highlight: boolean }) {
+  const opened = useGame(s => s.world.mission?.hints[hintKey] ?? 0)
+  if (mode === 'expert' || (mode === 'standard' && opened === 0)) return null
+  return <PortalPath def={def} steps={steps} highlight={mode === 'guided' && highlight} />
 }
 
 /** A hint ladder: direction → concept → resource → action → exact step (MVP §30). */

@@ -16,14 +16,14 @@ export function HomePage() {
         <h2 id="home-services" className="section-title">Azure services</h2>
         <ul className="service-tiles">
           <li>
-            <button type="button" className="service-tile" onClick={() => navigate({ page: 'createPicker' })}>
+            <button type="button" className="service-tile" onClick={() => navigate({ page: 'createPicker' })} data-guide="service:createResource">
               <span className="service-tile-icon is-create"><Add24Regular aria-hidden="true" /></span>
               <span>Create a resource</span>
             </button>
           </li>
           {SERVICES.map(s => (
             <li key={s.id}>
-              <button type="button" className="service-tile" onClick={() => navigate(s.route)}>
+              <button type="button" className="service-tile" onClick={() => navigate(s.route)} data-guide={`service:${s.id}`}>
                 <span className="service-tile-icon"><ServiceIcon name={s.icon} /></span>
                 <span>{s.label}</span>
               </button>

@@ -4,7 +4,8 @@ import {
   SOME_INTERNET_IP, subnetPrefixOf, vms, vmsRunning,
 } from './checks.ts'
 import { allObjectivesMet, judgeReport } from './engine.ts'
-import type { CheckResult, Condition, MissionDef, MissionFlow, ObjectiveDef, ReportDef } from './types.ts'
+import type {
+  CheckResult, Condition, MissionDef, MissionFlow, ObjectiveDef, PathStep, ReportDef } from './types.ts'
 
 /**
  * Mission 1, "PixelForge: Launch Day" (VM edition). Design: Docs/BOOTSTRAP_REPORT.md §G. Every check
@@ -335,6 +336,53 @@ const REPORT: ReportDef = {
 
 const ALL = OBJECTIVES.map(o => o.id)
 
+// ── Guided portal paths (D-7): where in the portal each requirement is done ───────────────────
+
+/** The network security group in front of a VM: its subnet's, else its network interface's (NSG-7). */
+function nsgInFront(world: World, vm: Resource | undefined): string | null {
+  const nic = vm ? azure.primaryNicOf(world, vm) : undefined
+  if (!nic) return null
+  const subnetId = azure.ipConfigurationsOf(nic)[0]?.properties.subnet.id
+  const subnet = subnetId ? azure.getResource(world, subnetId) : undefined
+  const onSubnet = (subnet?.properties.networkSecurityGroup as { id?: string } | undefined)?.id
+  return onSubnet ?? azure.nicNsgId(nic) ?? null
+}
+
+const ROLES: Record<string, (world: World) => string | null> = {
+  gameVm: w => gameVm(w)?.id ?? null,
+  dbNic: w => {
+    const vm = dbVm(w)
+    return (vm && azure.primaryNicOf(w, vm)?.id) ?? null
+  },
+  gameNsg: w => nsgInFront(w, gameVm(w)),
+  dbNsg: w => nsgInFront(w, dbVm(w)),
+  component: w => {
+    const test = gameTests(w)[0]
+    const watched = test ? azure.webTestView(test).componentId : null
+    return watched ?? Object.values(w.tenant.resources).filter(r => r.type.toLowerCase() === azure.COMPONENT_TYPE.toLowerCase()).sort((a, b) => a.id.localeCompare(b.id))[0]?.id ?? null
+  },
+}
+
+const svc = (id: string, label: string): PathStep => ({ label, rule: id === 'createResource' ? 'PORTAL-2' : 'PORTAL-5', target: { kind: 'service', id } })
+const res = (role: string, label: string): PathStep => ({ label, rule: 'PORTAL-5', target: { kind: 'resource', role } })
+const sec = (section: string, label: string, rule: string): PathStep => ({ label, rule, target: { kind: 'section', section } })
+const anchorStep = (id: string, label: string, rule: string): PathStep => ({ label, rule, target: { kind: 'anchor', id } })
+
+const INBOUND_RULE = (role: string, label: string): PathStep[] => [
+  svc('networkSecurityGroups', 'Network security groups'), res(role, label),
+  sec('inbound', 'Inbound security rules', 'PORTAL-12'), anchorStep('nsg:inbound:add', '+ Add', 'PORTAL-12'),
+]
+
+const PATHS: Record<string, PathStep[]> = {
+  'players-https': INBOUND_RULE('gameNsg', 'the NSG in front of the game API'),
+  'db-private': [svc('networkInterfaces', 'Network interfaces'), res('dbNic', 'the database VM\'s network interface'), sec('ipConfigurations', 'IP configurations', 'PORTAL-13')],
+  'db-only-game': INBOUND_RULE('dbNsg', 'the NSG in front of the database'),
+  'ssh-office': INBOUND_RULE('gameNsg', 'the NSG in front of the game API'),
+  'nothing-else-open': [svc('networkWatcher', 'Network Watcher'), sec('ipFlowVerify', 'IP flow verify', 'PORTAL-16')],
+  'west-europe': [svc('createResource', 'Create a resource'), anchorStep('tab:basics', 'Basics: Region', 'PORTAL-7')],
+  monitoring: [svc('applicationInsights', 'Application Insights'), res('component', 'your Application Insights'), sec('availability', 'Availability', 'PORTAL-17s'), anchorStep('insights:addTest', 'Add Standard test', 'PORTAL-17')],
+}
+
 export const PIXELFORGE_LAUNCH_DAY: MissionDef = {
   id: 'pixelforge-launch-day',
   title: 'PixelForge: Launch Day',
@@ -368,7 +416,8 @@ export const PIXELFORGE_LAUNCH_DAY: MissionDef = {
       { type: 'arm/subnets/write', caller: MIA.principalName, payload: { virtualNetworkId: vnetId, name: 'snet-test', addressPrefix: '10.50.1.0/24' } },
     ]
   },
-  objectives: OBJECTIVES,
+  objectives: OBJECTIVES.map(o => ({ ...o, ...(PATHS[o.id] ? { portalPath: PATHS[o.id] } : {}) })),
+  roles: ROLES,
   stages: [
     {
       id: 'build',
@@ -405,6 +454,8 @@ export const PIXELFORGE_LAUNCH_DAY: MissionDef = {
         'NSG rules are processed by priority: lowest number first, and processing stops at the first match.',
         'Delete the new deny rule. DenyAllInbound already blocks everything you haven\'t explicitly allowed.',
       ],
+      // Who changed what, and when: the evidence starts in the activity log (PORTAL-10).
+      portalPath: [svc('monitor', 'Monitor'), sec('activityLog', 'Activity log', 'PORTAL-10')],
       triggers: [
         { id: 'hardening', effects: [{ kind: 'command', command: hardening }] },
         {
