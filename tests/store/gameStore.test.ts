@@ -142,3 +142,16 @@ describe('game store with a mission world (step 9)', () => {
     expect(runtimeFor(newWorld('sandbox')).systems).toBe(SYSTEMS)
   })
 })
+
+describe('checkAll: Review + create for several commands (Create new resource group)', () => {
+  it('validates in order against the world as the earlier commands would leave it, without changing it', () => {
+    const st = store()
+    const world = st.getState().world
+    const sub = SANDBOX_SUBSCRIPTION.subscriptionId
+    const nsg = { type: 'arm/networkSecurityGroups/write', payload: { subscriptionId: sub, resourceGroupName: 'rg-new', name: 'nsg-a', location: 'westeurope' } }
+    expect(st.getState().check(nsg)).not.toBeNull()
+    expect(st.getState().checkAll([{ type: 'arm/resourceGroups/write', payload: { subscriptionId: sub, name: 'rg-new', location: 'westeurope' } }, nsg])).toBeNull()
+    expect(st.getState().world).toBe(world)
+    expect(st.getState().checkAll([{ type: 'arm/resourceGroups/write', payload: { subscriptionId: sub, name: '', location: 'westeurope' } }, nsg])).not.toBeNull()
+  })
+})

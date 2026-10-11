@@ -91,11 +91,16 @@ export interface GameState {
   dispatch(command: PlayerCommand): Outcome
   /** Review + create: what `dispatch` would refuse, without changing anything (null = passes). */
   check(command: PlayerCommand): Refusal | null
+  /**
+   * Review + create for several writes in order (e.g. Create new resource group, then the resource): each is
+   * checked against the world as the earlier ones would leave it. Nothing changes.
+   */
+  checkAll(commands: PlayerCommand[]): Refusal | null
   /** Advance by real elapsed milliseconds (scaled by speed, nothing while paused). */
   tick(realMs: number): void
   selectTab(tab: BottomTab): void
   /** Go to a page. The current one goes on the back stack (unless it's the same page); map and side pane close. */
-  navigate(route: Route): void
+  navigate(route: Route, options?: { replace?: boolean }): void
   goBack(): void
   toggleMap(on?: boolean): void
   openContextPane(pane: ContextPane): void
@@ -174,6 +179,18 @@ export function createGameStore({ world, registry }: { world: World; registry?: 
         return dryRun(get().world, runtime().registry, { ...command, caller: command.caller ?? PLAYER_PRINCIPAL })
       },
 
+      checkAll(commands) {
+        const { registry: reg } = runtime()
+        let w = get().world
+        for (const [i, command] of commands.entries()) {
+          const full = { ...command, caller: command.caller ?? PLAYER_PRINCIPAL }
+          const refusal = dryRun(w, reg, full)
+          if (refusal) return refusal
+          if (i < commands.length - 1) w = dispatchCommand(w, reg, full).world
+        }
+        return null
+      },
+
       tick(realMs) {
         const current = get().world
         const next = advance(current, realMs, runtime().systems)
@@ -184,10 +201,11 @@ export function createGameStore({ world, registry }: { world: World; registry?: 
         set(s => ({ session: { ...s.session, ui: { ...s.session.ui, bottomTab: tab } } }))
       },
 
-      navigate(route) {
+      navigate(route, options) {
         set(s => {
           const { nav } = s.session.ui
-          const back = sameRoute(nav.route, route) ? nav.back : [...nav.back, nav.route].slice(-BACK_LIMIT)
+          // replace: the current page isn't kept (a finished create wizard isn't somewhere to go back to).
+          const back = sameRoute(nav.route, route) || options?.replace ? nav.back : [...nav.back, nav.route].slice(-BACK_LIMIT)
           return withNav(s, { ...nav, route, back, map: false, contextPane: null })
         })
       },

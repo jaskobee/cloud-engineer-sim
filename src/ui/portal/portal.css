@@ -716,3 +716,121 @@
 .power {
   margin: 0 0 12px;
 }
+
+/* ── Create wizard (PORTAL-6) ───────────────────────────────────────────────────────────────── */
+
+.page-wizard .page-body {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+
+.wizard {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.wizard-tabs {
+  margin: -8px 0 8px -12px;
+  flex-wrap: wrap;
+}
+
+.wizard-body {
+  flex: 1;
+  max-width: 820px;
+  padding-bottom: 24px;
+}
+
+.wizard-footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 -24px;
+  padding: 12px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.wizard-footer.is-inline {
+  position: static;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.form-section {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.form-section-title {
+  margin: 8px 0 0;
+  font-size: var(--fontSizeBase400);
+  line-height: var(--lineHeightBase400);
+  font-weight: var(--fontWeightSemibold);
+}
+
+.form-section-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fontSizeBase200);
+}
+
+.form-field {
+  max-width: 560px;
+}
+
+.create-new-link {
+  justify-self: start;
+  margin-top: -6px;
+}
+
+.sim-note {
+  margin: 4px 0;
+  max-width: 640px;
+  color: var(--text-muted);
+  font-size: var(--fontSizeBase200);
+}
+
+.wizard-review {
+  display: grid;
+  gap: 16px;
+  margin: 8px 0;
+}
+
+.review-summary {
+  display: grid;
+  max-width: 640px;
+  margin: 0;
+}
+
+.deployment-summary {
+  margin: 16px 0;
+}
+
+.all-services-item.is-plain {
+  grid-template-columns: 1fr;
+}
+
+.picker-note {
+  margin-top: 16px;
+  max-width: 640px;
+}
+
+@media (max-width: 900px) {
+  .wizard-footer {
+    margin: 0 -12px;
+    padding: 10px 12px;
+  }
+}
+
+/* The shell owns scrolling: only the working pane, menus and panes scroll, never the document. */
+html:has(.portal),
+body:has(.portal) {
+  overflow: hidden;
+}

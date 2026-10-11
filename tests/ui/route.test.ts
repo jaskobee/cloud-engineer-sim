@@ -67,13 +67,16 @@ describe('store navigation', () => {
     expect(st.getState().session.ui.nav.route).toEqual(HOME)
   })
 
-  it('goBack after create returns to the wizard route, not past it', () => {
+  it('goBack after create skips the finished wizard (Create replaces it with the deployment page)', () => {
     const st = store()
     st.getState().navigate({ page: 'createPicker' })
     st.getState().navigate({ page: 'create', kind: 'virtualNetwork', tab: 'basics' })
+    st.getState().navigate({ page: 'deployment', id: 'd1' }, { replace: true })
     st.getState().navigate({ page: 'resource', id: VNET, section: 'overview' })
     st.getState().goBack()
-    expect(st.getState().session.ui.nav.route).toEqual({ page: 'create', kind: 'virtualNetwork', tab: 'basics' })
+    expect(st.getState().session.ui.nav.route).toEqual({ page: 'deployment', id: 'd1' })
+    st.getState().goBack()
+    expect(st.getState().session.ui.nav.route).toEqual({ page: 'createPicker' })
   })
 
   it('navigating leaves map mode and closes a context pane', () => {

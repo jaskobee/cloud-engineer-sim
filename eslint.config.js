@@ -22,7 +22,7 @@ export default tseslint.config(
   },
   {
     // Section registries: each module exports a table of the sections it renders. Fast refresh reloads them whole.
-    files: ['src/ui/portal/sections/*.tsx'],
+    files: ['src/ui/portal/sections/*.tsx', 'src/ui/portal/create/*.tsx'],
     rules: { 'react-refresh/only-export-components': 'off' },
   },
 )
