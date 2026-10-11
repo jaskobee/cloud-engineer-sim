@@ -1,4 +1,4 @@
-import { azure } from '../engine/index.ts'
+import { azure, type ArmId } from '../engine/index.ts'
 import { formatDuration, formatSimTime } from './format.ts'
 import { useGame } from './gameContext.ts'
 import { typeLabel } from './resourceKinds.ts'
@@ -7,13 +7,14 @@ import { typeLabel } from './resourceKinds.ts'
  * The resource group's deployment history (ARM-10): one deployment per write (ARM-12s), newest first.
  * Durations are made up and game-paced (ARM-13s), and the panel says so.
  */
-export function DeploymentsPanel() {
+export function DeploymentsPanel({ resourceGroupId }: { resourceGroupId?: ArmId } = {}) {
   const deployments = useGame(s => s.world.deployments)
   const now = useGame(s => s.world.clock.now)
   const epochMs = useGame(s => s.world.clock.epochMs)
   const resources = useGame(s => s.world.tenant.resources)
   const select = useGame(s => s.select)
-  const rows = Object.values(deployments).sort((a, b) => b.startedAt - a.startedAt || b.id.localeCompare(a.id))
+  const group = resourceGroupId ? azure.parseArmId(resourceGroupId) : null
+  const rows = Object.values(deployments).filter(d => !group || (d.subscriptionId === group.subscriptionId && azure.sameName(d.resourceGroupName ?? '', group.resourceGroupName))).sort((a, b) => b.startedAt - a.startedAt || b.id.localeCompare(a.id))
 
   if (rows.length === 0) {
     return (

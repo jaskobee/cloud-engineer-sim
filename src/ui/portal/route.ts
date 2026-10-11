@@ -44,7 +44,7 @@ export const initialNav = (): Nav => ({ route: HOME, back: [], map: false, conte
 export const sameRoute = (a: Route, b: Route): boolean => JSON.stringify(a) === JSON.stringify(b)
 
 /** Kinds whose forms open in a side pane on their parent's page; the rest get a full-page wizard. */
-export const CHILD_KINDS: readonly string[] = ['subnet', 'securityRule', 'webTest', 'metricAlert']
+export const CHILD_KINDS: readonly string[] = ['subnet', 'securityRule', 'webTest', 'metricAlert', 'associateSubnet']
 
 /** The service list each resource type belongs to (lower-case ARM type → list label). */
 const BROWSE_LABELS: Record<string, string> = {

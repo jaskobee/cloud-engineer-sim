@@ -11,10 +11,12 @@ import { useGame } from './gameContext.ts'
 
 const HOUR = 3_600_000
 
-export function AvailabilityPanel() {
+export function AvailabilityPanel({ componentId }: { componentId?: string } = {}) {
   const resources = useGame(s => s.world.tenant.resources)
   const selectedId = useGame(selectedIdOf)
-  const tests = Object.values(resources).filter(r => r.type.toLowerCase() === azure.WEBTEST_TYPE.toLowerCase()).sort((a, b) => a.name.localeCompare(b.name))
+  const tests = Object.values(resources)
+    .filter(r => r.type.toLowerCase() === azure.WEBTEST_TYPE.toLowerCase() && (!componentId || azure.sameName(azure.webTestView(r).componentId ?? '', componentId)))
+    .sort((a, b) => a.name.localeCompare(b.name))
   const [chosen, setChosen] = useState('')
   const fieldId = useId()
   const test = tests.find(t => t.id === chosen) ?? tests.find(t => selectedId !== null && azure.armKey(t.id) === azure.armKey(selectedId)) ?? tests[0]

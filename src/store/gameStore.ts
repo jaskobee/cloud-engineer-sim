@@ -231,7 +231,8 @@ export function createGameStore({ world, registry }: { world: World; registry?: 
         const { nav } = get().session.ui
         if (request === null) return nav.contextPane ? get().closeContextPane() : get().goBack()
         if (request.kind === null) return get().navigate({ page: 'createPicker' })
-        if (CHILD_KINDS.includes(request.kind)) return get().openContextPane({ kind: 'create', request })
+        // Child resources and edits open in a side pane over the page they belong to.
+        if (CHILD_KINDS.includes(request.kind) || request.preset?.mode === 'edit') return get().openContextPane({ kind: 'create', request })
         get().navigate({ page: 'create', kind: request.kind, tab: 'basics', ...(request.preset ? { preset: request.preset } : {}) })
       },
 

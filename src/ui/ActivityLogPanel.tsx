@@ -1,11 +1,14 @@
+import type { ArmId } from '../engine/index.ts'
 import { formatSimTime } from './format.ts'
 import { useGame } from './gameContext.ts'
 
 /** Activity log: every control-plane write, newest first, with who did it and when (MON-7, MON-9). */
-export function ActivityLogPanel() {
+export function ActivityLogPanel({ scope }: { scope?: ArmId } = {}) {
   const entries = useGame(s => s.world.activityLog)
   const epochMs = useGame(s => s.world.clock.epochMs)
-  const rows = [...entries].reverse()
+  // Opened from a resource's menu, the log is filtered to that resource (PORTAL-10); a resource group's covers its resources.
+  const prefix = scope?.toLowerCase()
+  const rows = [...entries].reverse().filter(e => !prefix || e.resourceId.toLowerCase() === prefix || e.resourceId.toLowerCase().startsWith(`${prefix}/`))
 
   if (rows.length === 0) {
     return (

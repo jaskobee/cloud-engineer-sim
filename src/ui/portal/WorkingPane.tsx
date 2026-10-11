@@ -1,13 +1,13 @@
 import { CreatePanel } from '../CreatePanel.tsx'
 import { DeploymentsPanel } from '../DeploymentsPanel.tsx'
 import { useGame } from '../gameContext.ts'
-import { Inspector } from '../Inspector.tsx'
 import { AllServicesPage } from './AllServicesPage.tsx'
 import { BrowsePage } from './BrowsePage.tsx'
 import { HomePage } from './HomePage.tsx'
 import { MapView } from './MapView.tsx'
 import { PageFrame } from './PageFrame.tsx'
 import { breadcrumbFor, createTitle } from './route.ts'
+import { ResourcePage } from './ResourcePage.tsx'
 import { ServicePage } from './ServicePage.tsx'
 
 /** The working pane (PORTAL-3): the page for the current route, or the map when the Map toggle is on. */
@@ -31,6 +31,6 @@ export function WorkingPane() {
     case 'deployment':
       return <PageFrame title={breadcrumbFor(route, { deployments }).at(-1)?.label ?? 'Deployment'} subtitle="Deployment"><DeploymentsPanel /></PageFrame>
     case 'resource':
-      return <PageFrame title={breadcrumbFor(route, { deployments }).at(-1)?.label ?? ''}><Inspector key={route.id} id={route.id} /></PageFrame>
+      return <ResourcePage key={route.id} id={route.id} section={route.section} />
   }
 }

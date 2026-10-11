@@ -85,3 +85,8 @@ export function sectionLabel(groups: MenuGroup[], section: string): string | nul
 
 /** The first section of a menu: where a service opens. */
 export const firstSection = (groups: MenuGroup[]): string => groups[0]?.items[0]?.id ?? 'overview'
+
+/** The section to show: the requested one if the type's menu lists it, else Overview (stale or foreign routes). */
+export function resolveSection(type: string, section: string): string {
+  return serviceMenuFor(type).some(g => g.items.some(i => i.id === section)) ? section : 'overview'
+}

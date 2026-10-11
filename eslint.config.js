@@ -20,4 +20,9 @@ export default tseslint.config(
     files: ['src/ui/**/*.tsx', 'src/main.tsx'],
     extends: [reactHooks.configs.flat['recommended-latest'], reactRefresh.configs.vite],
   },
+  {
+    // Section registries: each module exports a table of the sections it renders. Fast refresh reloads them whole.
+    files: ['src/ui/portal/sections/*.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
 )

@@ -96,5 +96,7 @@ describe('store navigation', () => {
     expect(st.getState().session.ui.nav.contextPane).toEqual({ kind: 'create', request: { kind: 'securityRule', preset: { networkSecurityGroupId: NSG_GAME } } })
     st.getState().startCreate(null)
     expect(st.getState().session.ui.nav.contextPane).toBeNull()
+    st.getState().startCreate({ kind: 'networkInterface', preset: { mode: 'edit', name: 'nic-game-01' } })
+    expect(st.getState().session.ui.nav.contextPane).toMatchObject({ kind: 'create', request: { kind: 'networkInterface' } })
   })
 })

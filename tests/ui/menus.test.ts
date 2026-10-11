@@ -53,3 +53,12 @@ describe('service menus (PORTAL rules)', () => {
     expect(serviceMenuFor('Microsoft.Compute/disks').flatMap(g => g.items.map(i => i.id))).toEqual(['overview', 'activityLog'])
   })
 })
+
+describe('stale or unknown sections', () => {
+  it('a section the type does not list falls back to Overview', async () => {
+    const { resolveSection } = await import('../../src/ui/portal/menus.ts')
+    expect(resolveSection(azure.NSG_TYPE, 'inbound')).toBe('inbound')
+    expect(resolveSection(azure.NSG_TYPE, 'subnetsOfSomethingElse')).toBe('overview')
+    expect(resolveSection(azure.PUBLIC_IP_TYPE, 'inbound')).toBe('overview')
+  })
+})

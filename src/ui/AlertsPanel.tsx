@@ -1,9 +1,12 @@
+import { azure, type ArmId } from '../engine/index.ts'
 import { formatSimTime } from './format.ts'
 import { useGame } from './gameContext.ts'
 
 /** Alerts (MON-24): newest first. The system sets the condition; the user response stays New for now (MON-28s). */
-export function AlertsPanel() {
-  const fired = useGame(s => s.world.alerts.fired)
+export function AlertsPanel({ alertRuleIds }: { alertRuleIds?: ArmId[] } = {}) {
+  const all = useGame(s => s.world.alerts.fired)
+  // From a resource's Monitoring > Alerts, only that resource's alerts (PORTAL-15).
+  const fired = alertRuleIds ? all.filter(a => alertRuleIds.some(id => azure.sameName(id, a.alertRuleId))) : all
   const epochMs = useGame(s => s.world.clock.epochMs)
   const select = useGame(s => s.select)
   const at = (t: number) => {

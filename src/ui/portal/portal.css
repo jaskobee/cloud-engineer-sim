@@ -642,3 +642,77 @@
     padding-right: 12px;
   }
 }
+
+/* ── Resource pages: Essentials, sections ───────────────────────────────────────────────────── */
+
+.essentials {
+  margin-bottom: 24px;
+}
+
+.essentials-title {
+  margin: 0 0 8px;
+  font-size: var(--fontSizeBase300);
+  font-weight: var(--fontWeightSemibold);
+}
+
+.essentials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2px 32px;
+  margin: 0;
+}
+
+.essentials-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 40%) 1fr;
+  gap: 12px;
+  padding: 3px 0;
+}
+
+.essentials-row dt {
+  color: var(--text-muted);
+}
+
+.essentials-row dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.essentials .resource-id {
+  margin-top: 12px;
+}
+
+.page-state {
+  color: var(--state-warn);
+}
+
+.page-subtitle .info-button {
+  margin-left: 6px;
+}
+
+.rules-grid .rule-default td {
+  color: var(--text-muted);
+}
+
+.linked-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.section-form {
+  display: grid;
+  gap: 12px;
+  max-width: 420px;
+}
+
+.section-form p {
+  margin: 0;
+}
+
+.nic-card {
+  margin-bottom: 24px;
+}
+
+.power {
+  margin: 0 0 12px;
+}
