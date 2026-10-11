@@ -60,7 +60,7 @@ export type Set = (key: string, value: string) => void
  * Project details (PORTAL-6): Subscription, then Resource group with "Create new". A new group is created
  * in the resource's region before the resource (as one deployment would in the portal).
  */
-export function ProjectDetails({ values, set, world }: { values: Values; set: Set; world: World }) {
+export function ProjectDetails({ values, set, world, heading = true }: { values: Values; set: Set; world: World; heading?: boolean }) {
   const [creatingNew, setCreatingNew] = useState(values.newResourceGroup === 'true')
   const subscriptions = Object.values(world.tenant.subscriptions)
   const groups = Object.values(world.tenant.resourceGroups)
@@ -72,7 +72,7 @@ export function ProjectDetails({ values, set, world }: { values: Values; set: Se
     set('resourceGroupName', on ? '' : groups[0]?.name ?? '')
   }
   return (
-    <FormSection title="Project details">
+    <FormSection {...(heading ? { title: 'Project details' } : {})}>
       <SelectField label="Subscription" required value={values.subscriptionId ?? ''} onChange={x => set('subscriptionId', x)}
         options={subscriptions.map(s => [s.subscriptionId, s.displayName])} />
       {creatingNew ? (

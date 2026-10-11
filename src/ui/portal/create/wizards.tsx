@@ -37,9 +37,9 @@ const groupLabel = (values: Values) => `${values.resourceGroupName ?? ''}${value
 const optionLabel = (r: Resource, extra = '') => `${r.name}${extra} (${azure.parseArmId(r.id)?.resourceGroupName ?? ''})`
 
 /** Instance details with a name and a region: most Basics tabs. */
-function NameAndRegion({ values, set, nameLabel, placeholder, regionHint }: TabProps & { nameLabel: string; placeholder: string; regionHint?: string }) {
+function NameAndRegion({ values, set, nameLabel, placeholder, regionHint, heading = true }: TabProps & { nameLabel: string; placeholder: string; regionHint?: string; heading?: boolean }) {
   return (
-    <FormSection title="Instance details">
+    <FormSection {...(heading ? { title: 'Instance details' } : {})}>
       <TextField label={nameLabel} required value={values.name ?? ''} onChange={x => set('name', x)} placeholder={placeholder} />
       <SelectField label="Region" required value={values.location ?? 'westeurope'} onChange={x => set('location', x)} options={REGION_OPTIONS} {...(regionHint ? { hint: regionHint } : {})} />
     </FormSection>
@@ -52,10 +52,11 @@ const basicSummary = (values: Values): [string, string][] => [
 
 export const WIZARDS: Record<string, WizardDef> = {
   resourceGroup: {
+    singleScreen: true,
     tabs: [BASICS],
     initial: world => ({ subscriptionId: Object.values(world.tenant.subscriptions)[0]?.subscriptionId ?? '', name: '', location: 'westeurope' }),
     render: (_tab, { values, set, world }) => (
-      <FormSection title="Project details">
+      <FormSection>
         <SelectField label="Subscription" required value={values.subscriptionId ?? ''} onChange={x => set('subscriptionId', x)}
           options={Object.values(world.tenant.subscriptions).map(s => [s.subscriptionId, s.displayName])} />
         <TextField label="Resource group" required value={values.name ?? ''} onChange={x => set('name', x)} placeholder="rg-pixelforge-prod" />
@@ -75,7 +76,7 @@ export const WIZARDS: Record<string, WizardDef> = {
         <FormSection title="IPv4 address space">
           <TextField label="IPv4 address space" required value={props.values.addressSpace ?? ''} onChange={x => props.set('addressSpace', x)}
             hint="One CIDR block from a private range, e.g. 10.40.0.0/16. Subnets are carved out of it." />
-          <SimNote>Add subnets after the network exists (Subnets &gt; + Subnet). The Security tab isn't modelled.</SimNote>
+          <SimNote>In the portal this tab also requires one subnet (Subnet name, Subnet address range). Here you add subnets after the network exists (Subnets &gt; + Subnet). The Security tab isn't modelled.</SimNote>
         </FormSection>
       ),
     summary: values => [...basicSummary(values), ['Address space', values.addressSpace ?? '']],
@@ -130,8 +131,8 @@ export const WIZARDS: Record<string, WizardDef> = {
       const subnet = subnets.find(s => s.id === values.subnetId)
       return (
         <>
-          <ProjectDetails {...props} />
-          <NameAndRegion {...props} nameLabel="Name" placeholder="nic-game-01" regionHint="Must match the region of the virtual network." />
+          <ProjectDetails {...props} heading={false} />
+          <NameAndRegion {...props} heading={false} nameLabel="Name" placeholder="nic-game-01" regionHint="Must match the region of the virtual network." />
           <FormSection>
             <SelectField label="Virtual network" required value={values.virtualNetworkId ?? ''} options={vnets.map(n => [n.id, optionLabel(n)])}
               onChange={x => { set('virtualNetworkId', x); set('subnetId', of(world, azure.SUBNET_TYPE).find(s => azure.sameName(azure.parentResourceId(s.id) ?? '', x))?.id ?? '') }} />
@@ -144,7 +145,7 @@ export const WIZARDS: Record<string, WizardDef> = {
               <TextField label="Private IP address" required value={values.privateIPAddress ?? ''} onChange={x => set('privateIPAddress', x)}
                 hint={`A free address in ${String(subnet?.properties.addressPrefix ?? 'the subnet')}, not one of the five Azure reserves.`} />
             )}
-            <SimNote>Attach a public IP address under IP configurations and a network security group under Network security group once it exists, as in the portal.</SimNote>
+            <SimNote>The portal doesn't assign a public IP address when you create a network interface: associate one under IP configurations afterwards. Set a network security group under Network security group.</SimNote>
           </FormSection>
         </>
       )
@@ -188,7 +189,7 @@ export const WIZARDS: Record<string, WizardDef> = {
       }
       if (tab === 'disks') {
         return (
-          <FormSection title="OS disk">
+          <FormSection>
             <SelectField label="OS disk type" value={values.osDiskType ?? ''} onChange={x => set('osDiskType', x)}
               options={azure.OS_DISK_TYPES.map(t => [t.sku, `${t.displayName} (${t.sku})`])} />
           </FormSection>
@@ -220,21 +221,22 @@ export const WIZARDS: Record<string, WizardDef> = {
       <>
         <ProjectDetails {...props} />
         <NameAndRegion {...props} nameLabel="Name" placeholder="log-pixelforge-prod" />
-        {/* MON-30: new workspaces get a default pay-as-you-go pricing tier (the ARM SKU name is PerGB2018). */}
-        <FixedField label="Pricing tier" value="Pay-as-you-go (PerGB2018)" />
-        <p className="form-section-hint">4 to 63 letters, numbers and hyphens. Data is kept 30 days by default; Application Insights tables keep 90 days.</p>
+        {/* MON-30: new workspaces get a default pay-as-you-go pricing tier. */}
+        <p className="form-section-hint">A default pay-as-you-go pricing tier is applied; no charges accrue until data collection begins. 4 to 63 letters, numbers and hyphens. Data is kept 30 days by default; Application Insights tables keep 90 days.</p>
       </>
     ),
-    summary: values => [...basicSummary(values), ['Pricing tier', 'Pay-as-you-go (PerGB2018)']],
+    summary: values => [...basicSummary(values), ['Pricing', 'Pay-as-you-go (default)']],
   },
 
   component: {
+    singleScreen: true,
     tabs: [BASICS],
     initial: world => ({ ...initialProject(world), workspaceId: of(world, azure.WORKSPACE_TYPE)[0]?.id ?? '' }),
     render: (_tab, props) => (
       <>
-        <ProjectDetails {...props} />
-        <NameAndRegion {...props} nameLabel="Name" placeholder="appi-pixelforge-prod" />
+        <SimNote>Learn describes this page only as "Enter all relevant information, then Review + create"; the field names here are the simulator's (PORTAL-7s).</SimNote>
+        <ProjectDetails {...props} heading={false} />
+        <NameAndRegion {...props} heading={false} nameLabel="Name" placeholder="appi-pixelforge-prod" />
         <FormSection>
           <SelectField label="Log Analytics workspace" required value={props.values.workspaceId ?? ''} onChange={x => props.set('workspaceId', x)}
             options={of(props.world, azure.WORKSPACE_TYPE).map(w => [w.id, optionLabel(w)])}

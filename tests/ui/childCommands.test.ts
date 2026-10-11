@@ -56,9 +56,12 @@ describe('side pane forms (PORTAL-11, PORTAL-12, PORTAL-12s, PORTAL-17)', () => 
     })
   })
 
-  it('network interface edit keeps its subnet and address, changes public IP and NSG', () => {
+  it('IP configuration pane changes the public IP only; the NSG stays a NIC-level setting (PORTAL-13)', () => {
     const nic = azure.getResource(world, NIC_GAME)!
-    const values = { ...initialChild('networkInterface', { mode: 'edit', name: nic.name }, world, NIC_GAME), networkSecurityGroupId: NSG_GAME }
-    expect(childCommand('networkInterface', values, world)?.payload).toMatchObject({ name: 'nic-game-01', networkSecurityGroupId: NSG_GAME, privateIPAllocationMethod: azure.ipConfigurationsOf(nic)[0]?.properties.privateIPAllocationMethod, subnetId: azure.ipConfigurationsOf(nic)[0]?.properties.subnet.id })
+    const current = azure.nicNsgId(nic)
+    const values = { ...initialChild('networkInterface', { mode: 'edit', name: nic.name }, world, NIC_GAME), publicIPAddressId: '', networkSecurityGroupId: NSG_GAME }
+    const payload = childCommand('networkInterface', values, world)?.payload as Record<string, unknown>
+    expect(payload).toMatchObject({ name: 'nic-game-01', publicIPAddressId: null, subnetId: azure.ipConfigurationsOf(nic)[0]?.properties.subnet.id })
+    expect(payload.networkSecurityGroupId).toBe(current ?? null)
   })
 })

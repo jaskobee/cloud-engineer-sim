@@ -24,9 +24,9 @@ export function BrowsePage({ type }: { type: string }) {
       {kind && <ToolbarButton icon={<Add20Regular />} onClick={() => startCreate({ kind })} data-guide={`create:${kind}`}>Create</ToolbarButton>}
       <ToolbarButton icon={<ArrowClockwise20Regular />} onClick={() => refresh(n => n + 1)}>Refresh</ToolbarButton>
     </>}>
-      <Input className="browse-filter" contentBefore={<Filter20Regular />} placeholder="Filter for any field..." value={filter}
+      <Input className="browse-filter" contentBefore={<Filter20Regular />} placeholder="Filter by name" value={filter}
         onChange={(_, d) => setFilter(d.value)} aria-label={`Filter ${label.toLowerCase()}`} />
-      <p className="browse-count">Showing {rows.length} record{rows.length === 1 ? '' : 's'}.</p>
+      <p className="browse-count">{rows.length} item{rows.length === 1 ? '' : 's'}</p>
       {rows.length === 0 ? <p className="empty">No {label.toLowerCase()} to display.</p> : (
         <div className="grid-scroll">
           <table className="grid">

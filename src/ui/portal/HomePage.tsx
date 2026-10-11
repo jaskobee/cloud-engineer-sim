@@ -13,7 +13,7 @@ export function HomePage() {
   return (
     <PageFrame title="Home" className="home">
       <section aria-labelledby="home-services">
-        <h2 id="home-services" className="section-title">Azure services</h2>
+        <h2 id="home-services" className="section-title">Services</h2>
         <ul className="service-tiles">
           <li>
             <button type="button" className="service-tile" onClick={() => navigate({ page: 'createPicker' })} data-guide="service:createResource">
@@ -49,7 +49,7 @@ function RecentResources() {
   }
   return (
     <section aria-labelledby="home-recent">
-      <h2 id="home-recent" className="section-title">Recent resources</h2>
+      <h2 id="home-recent" className="section-title">Recently visited resources</h2>
       {recent.length === 0 ? <p className="empty">Resources you open appear here.</p> : (
         <table className="grid">
           <thead><tr><th scope="col">Name</th><th scope="col">Type</th></tr></thead>

@@ -112,7 +112,8 @@ export function propertyRows(resource: Resource, world: World): Row[] {
     case azure.WORKSPACE_TYPE.toLowerCase(): {
       const components = of(tenant, azure.COMPONENT_TYPE).filter(c => azure.sameName(azure.workspaceOfComponent(c) ?? '', resource.id))
       return [
-        ['Pricing tier', String((p.sku as { name?: string } | undefined)?.name ?? '')],
+        // MON-30: pay-as-you-go by default; this is the ARM sku.name the simulator stores.
+        ['SKU (ARM)', String((p.sku as { name?: string } | undefined)?.name ?? '')],
         ['Retention', `${String(p.retentionInDays)} days (Application Insights tables: 90)`],
         ['Application Insights', components.map(c => c.name).join(', ') || 'None'],
       ]

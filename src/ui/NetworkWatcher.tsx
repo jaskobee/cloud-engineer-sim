@@ -90,7 +90,7 @@ export function IpFlowVerifyPanel() {
         <Field label="Remote IP address">{id => <input id={id} className="input mono" value={remoteIp} placeholder="198.51.100.77" onChange={e => setRemoteIp(e.target.value)} />}</Field>
         <Field label="Remote port">{id => <input id={id} className="input mono" value={remotePort} inputMode="numeric" onChange={e => setRemotePort(e.target.value)} />}</Field>
         <div className="nw-submit">
-          <button type="submit" className="button button-primary">Check</button>
+          <button type="submit" className="button button-primary">Verify IP flow</button>
         </div>
       </form>
 

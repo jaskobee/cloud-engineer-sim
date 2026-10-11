@@ -143,15 +143,19 @@ export function childCommand(kind: string, values: Values, world?: World): Playe
         },
       }
     }
-    case 'networkInterface':
+    case 'networkInterface': {
+      // The IP configuration pane changes the public IP; the NSG is a NIC-level setting with its own page (PORTAL-13).
+      const nic = world?.tenant.resources[azure.armKey(v('nicId'))]
+      const nsg = nic ? azure.nicNsgId(nic) : v('networkSecurityGroupId') || null
       return {
         type: 'arm/networkInterfaces/write',
         payload: {
           subscriptionId: v('subscriptionId'), resourceGroupName: v('resourceGroupName'), name: v('name'), location: v('location'), subnetId: v('subnetId'),
           privateIPAllocationMethod: v('privateIPAllocationMethod'), ...(v('privateIPAllocationMethod') === 'Static' ? { privateIPAddress: v('privateIPAddress') } : {}),
-          publicIPAddressId: v('publicIPAddressId') || null, networkSecurityGroupId: v('networkSecurityGroupId') || null,
+          publicIPAddressId: v('publicIPAddressId') || null, networkSecurityGroupId: nsg ?? null,
         },
       }
+    }
     default:
       return null
   }

@@ -132,7 +132,7 @@ const FORMS: Record<string, (p: FormProps) => ReactNode> = {
         <SelectField label="Virtual network" required value={values.virtualNetworkId ?? ''} options={vnets.map(v => [v.id, `${v.name} (${azure.parseArmId(v.id)?.resourceGroupName ?? ''})`])}
           onChange={x => { set('virtualNetworkId', x); set('subnetId', of(world, azure.SUBNET_TYPE).find(s => azure.sameName(azure.parentResourceId(s.id) ?? '', x))?.id ?? '') }} />
         <SelectField label="Subnet" required value={values.subnetId ?? ''} onChange={x => set('subnetId', x)} options={subnets.map(s => [s.id, s.name])} />
-        <p className="form-section-hint">A subnet has one network security group. Associating this one replaces any other on the subnet.</p>
+        <p className="form-section-hint">A subnet can have zero or one network security group. In the simulator, associating this one replaces the subnet's current one.</p>
       </FormSection>
     )
   },
@@ -148,7 +148,7 @@ const FORMS: Record<string, (p: FormProps) => ReactNode> = {
             hint="Must be reachable from the public internet. The simulator has no DNS, so use the public IP address." />
           <Checkbox label="Enable retries for availability test failures" checked={values.retries !== 'false'} onChange={(_, d) => set('retries', String(d.checked === true))} />
           <SelectField label="Test frequency" value={values.frequency ?? '300'} onChange={x => set('frequency', x)} options={azure.TEST_FREQUENCIES.map(f => [String(f), `${f / 60} minutes`])} />
-          <Field label={`Test locations (${chosen.length} of ${azure.TEST_LOCATIONS.length})`} hint="Learn recommends at least five, so a problem near one location doesn't look like an outage.">
+          <Field label={`Test locations (${chosen.length} of ${azure.TEST_LOCATIONS.length})`} hint="Learn recommends at least five, to distinguish problems in your website from network issues.">
             <div className="check-grid">
               {azure.TEST_LOCATIONS.map(l => <Checkbox key={l.id} label={l.displayName} checked={chosen.includes(l.id)} onChange={() => toggle(l.id)} />)}
             </div>
@@ -190,9 +190,9 @@ const FORMS: Record<string, (p: FormProps) => ReactNode> = {
   networkInterface: ({ values, set, world }) => (
     <FormSection title="IP configuration">
       <p className="form-section-hint">Private IP address: {values.privateIPAddress} ({values.privateIPAllocationMethod})</p>
-      <SelectField label="Public IP address" value={values.publicIPAddressId ?? ''} onChange={x => set('publicIPAddressId', x)} options={withNone(of(world, azure.PUBLIC_IP_TYPE))} />
-      <SelectField label="Network security group" value={values.networkSecurityGroupId ?? ''} onChange={x => set('networkSecurityGroupId', x)} options={withNone(of(world, azure.NSG_TYPE))}
-        hint="Inbound traffic must be allowed by the subnet's network security group and this one." />
+      <SelectField label="Public IP address" value={values.publicIPAddressId ?? ''} onChange={x => set('publicIPAddressId', x)} options={withNone(of(world, azure.PUBLIC_IP_TYPE))}
+        hint="None disassociates it." />
+      <p className="form-section-hint">The network security group is set on the network interface itself: Network security group in its menu.</p>
     </FormSection>
   ),
 }
