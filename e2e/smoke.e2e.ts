@@ -55,7 +55,7 @@ test('start screen → take the job → ticket, portal pages, map, hints and INF
   await expect(page.locator('.activity-log tbody tr').first()).toContainText('mia@pixelforge.example')
   await page.getByRole('combobox', { name: 'Search resources and services' }).fill('Network Watcher')
   await page.keyboard.press('Enter')
-  await page.getByRole('button', { name: 'IP flow verify' }).click()
+  await page.locator('.service-menu').getByRole('button', { name: 'IP flow verify' }).click()
   await expect(page.getByRole('heading', { level: 1, name: /Network Watcher \| IP flow verify/ })).toBeVisible()
 
   expect(errors).toEqual([])
