@@ -36,3 +36,14 @@ export const activityLogRetention: System = world => {
   if (first === undefined || first.eventTimestamp >= cutoff) return world
   return { ...world, activityLog: world.activityLog.filter(e => e.eventTimestamp >= cutoff) }
 }
+
+/**
+ * Who created a resource or resource group: the caller of the first successful write to it in the activity log
+ * (MON-9, PORTAL-21s). Null when the log has no such event (the OS disk a VM write creates, VM-15s, or events past
+ * retention).
+ */
+export function creatorOf(log: readonly ActivityLogEntry[], id: ArmId): string | null {
+  const key = id.toLowerCase()
+  const first = log.find(e => e.status === 'Succeeded' && e.resourceId.toLowerCase() === key && /\/write$/i.test(e.operationName))
+  return first?.caller ?? null
+}

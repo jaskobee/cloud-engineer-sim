@@ -5,6 +5,7 @@ import { useGame } from '../gameContext.ts'
 import { useStableWorld } from './useStableWorld.ts'
 import { kindForType } from '../resourceKinds.ts'
 import { browseRows } from './browse.ts'
+import { createdByLabel } from './callers.ts'
 import { PageFrame } from './PageFrame.tsx'
 import { browseLabel } from './route.ts'
 import { TypeIcon } from './ServiceIcon.tsx'
@@ -32,7 +33,7 @@ export function BrowsePage({ type }: { type: string }) {
         <div className="grid-scroll">
           <table className="grid">
             <thead>
-              <tr><th scope="col">Name</th><th scope="col">Resource group</th><th scope="col">Location</th><th scope="col">Subscription</th></tr>
+              <tr><th scope="col">Name</th><th scope="col">Resource group</th><th scope="col">Location</th><th scope="col">Subscription</th><th scope="col">Created by <span className="sim-label">Simulator</span></th></tr>
             </thead>
             <tbody>
               {rows.map(r => (
@@ -47,6 +48,7 @@ export function BrowsePage({ type }: { type: string }) {
                   <td>{r.resourceGroup}</td>
                   <td>{r.location}</td>
                   <td>{r.subscription}</td>
+                  <td>{createdByLabel(r.id, world)}</td>
                 </tr>
               ))}
             </tbody>

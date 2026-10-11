@@ -9,6 +9,7 @@ import { useGame } from '../../gameContext.ts'
 import { MetricsPanel } from '../../MetricsPanel.tsx'
 import { SimulatedApp } from '../../SimulatedApp.tsx'
 import { typeLabel } from '../../resourceKinds.ts'
+import { createdByLabel } from '../callers.ts'
 import { Essentials, ResourceLink } from './common.tsx'
 import { asResource, type SectionDef, type SectionProps } from './types.ts'
 
@@ -34,13 +35,14 @@ function GroupOverview(props: SectionProps) {
       {resources.length === 0 ? <p className="empty">No resources in this group yet.</p> : (
         <div className="grid-scroll">
           <table className="grid">
-            <thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Location</th></tr></thead>
+            <thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Location</th><th scope="col">Created by <span className="sim-label">Simulator</span></th></tr></thead>
             <tbody>
               {resources.map(r => (
                 <tr key={r.id}>
                   <td><Link as="button" onClick={() => navigate({ page: 'resource', id: r.id, section: 'overview' })}>{r.name}</Link></td>
                   <td>{typeLabel(r.type)}</td>
                   <td>{r.location === 'global' ? 'Global' : azure.regionDisplayName(r.location)}</td>
+                  <td>{createdByLabel(r.id, world)}</td>
                 </tr>
               ))}
             </tbody>

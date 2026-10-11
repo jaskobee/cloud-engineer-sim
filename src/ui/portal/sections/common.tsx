@@ -6,6 +6,7 @@ import { useGame } from '../../gameContext.ts'
 import { useStableWorld } from '../useStableWorld.ts'
 import { essentialsRows } from '../resourceFacts.ts'
 import { routeForResource } from '../route.ts'
+import { createdByLabel } from '../callers.ts'
 
 /** Essentials (PORTAL-4, PORTAL-4s): two columns of label/value pairs, like the portal's Overview. */
 export function Essentials({ target, world }: SectionProps) {
@@ -27,6 +28,10 @@ export function Essentials({ target, world }: SectionProps) {
             </dd>
           </div>
         ))}
+        <div className="essentials-row">
+          <dt>Created by <span className="sim-label" title="A simulator field. In the portal, look in the resource's Activity log.">Simulator</span></dt>
+          <dd>{createdByLabel(target.id, world)}</dd>
+        </div>
       </dl>
       <p className="resource-id"><span>Resource ID</span><code>{target.id}</code></p>
     </section>

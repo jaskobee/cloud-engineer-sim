@@ -177,6 +177,7 @@ export const INFO_TOPICS: readonly InfoTopic[] = [
       { heading: 'What is it?', text: 'The record of control-plane operations in a subscription: every create, update and delete, who did it and when. Events are kept 90 days.', rules: ['MON-7', 'MON-9'] },
       { heading: 'How does Azure use it?', text: 'Each write records a Started event and then Succeeded or Failed, with the caller and the operation name.', rules: ['MON-8', 'MON-9'] },
       { heading: 'Common mistakes', text: 'Not checking it first when something breaks: a change made just before the problem started is often the cause.', rules: ['MON-7'] },
+      { heading: 'In this simulator', text: 'Created by on resource pages and lists is a simulator field: the caller of the resource\'s first successful write in the activity log. In the portal, open the resource\'s Activity log to find out who created or changed it.', rules: ['PORTAL-21s', 'PORTAL-10', 'MON-9'] },
     ],
     related: ['alerts', 'ip-flow-verify'],
     certifications: ['AZ-104'],
