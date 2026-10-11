@@ -153,3 +153,17 @@ describe('canvas graph: app health on the VM card (RUN-2s)', () => {
     expect(status?.detail).toContain('Deny-Postgres')
   })
 })
+
+describe('canvas graph scoped to one virtual network (Virtual network > Diagram, PORTAL-11)', () => {
+  it('keeps the Internet, the VNet, its subnets and what is drawn in them; drops other groups and side resources', () => {
+    const world = pixelForge()
+    const full = buildCanvasGraph(world, [players])
+    const scoped = buildCanvasGraph(world, [players], { vnetId: VNET })
+    expect(scoped.boxes.map(b => b.kind).sort()).toEqual(['subnet', 'subnet', 'virtualNetwork'])
+    expect(scoped.nodes.some(n => n.id === INTERNET_ID)).toBe(true)
+    expect(node(scoped, k(NIC_GAME))).toBeDefined()
+    expect(scoped.nodes.length).toBeLessThan(full.nodes.length)
+    // The players' flow (Internet → game VM) is still drawn.
+    expect(scoped.edges.some(e => e.kind === 'traffic')).toBe(true)
+  })
+})

@@ -290,43 +290,6 @@ body {
   white-space: nowrap;
 }
 
-/* ── Workspace layout (bootstrap report §H) ──────────────────────────────────────────────── */
-
-.workspace {
-  display: grid;
-  height: 100%;
-  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr) minmax(240px, 320px);
-  grid-template-rows: auto minmax(0, 1fr) minmax(160px, 28vh);
-  grid-template-areas:
-    'top top top'
-    'quest canvas inspector'
-    'bottom bottom bottom';
-}
-
-.topbar {
-  grid-area: top;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 24px;
-  padding: 10px 20px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-}
-
-.topbar-title {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 14px;
-}
-
-.topbar-context {
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
 .pane {
   min-width: 0;
   min-height: 0;
@@ -335,87 +298,10 @@ body {
   background: var(--surface);
 }
 
-.pane-quest {
-  grid-area: quest;
-  border-right: 1px solid var(--border);
-}
-
-.pane-inspector {
-  grid-area: inspector;
-  border-left: 1px solid var(--border);
-}
-
 .pane-title {
   margin: 0 0 10px;
   font-size: 0.95rem;
   font-weight: 650;
-}
-
-/* The canvas is the visual centre: a quiet dot grid says "this is a surface you build on". */
-.pane-canvas {
-  grid-area: canvas;
-  position: relative;
-  display: grid;
-  place-items: center;
-  background-color: var(--bg);
-  background-image: radial-gradient(var(--border) 1px, transparent 1px);
-  background-size: 22px 22px;
-}
-
-.canvas-empty {
-  text-align: center;
-  padding: 24px;
-  display: grid;
-  justify-items: center;
-  gap: 6px;
-}
-
-.canvas-empty-title {
-  margin: 0;
-  font-weight: 600;
-}
-
-.pane.pane-bottom {
-  grid-area: bottom;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  border-top: 1px solid var(--border);
-}
-
-.tabs {
-  display: flex;
-  gap: 4px;
-  padding: 0 12px;
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto;
-  /* Hidden labels inside tabs are positioned against the tab, so they don't widen the page. */
-  position: relative;
-}
-
-.tab {
-  position: relative;
-  flex-shrink: 0;
-  font: inherit;
-  font-size: 0.9rem;
-  padding: 9px 12px 8px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: none;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.tab[aria-selected='true'] {
-  color: var(--text);
-  border-bottom-color: var(--accent);
-  font-weight: 600;
-}
-
-.tab-panel {
-  flex: 1;
-  overflow: auto;
-  padding: 12px 18px;
 }
 
 /* ── Sim clock: the one loud element. A console readout with a state light. ──────────────── */
@@ -543,24 +429,6 @@ body {
 
 .status-started::before {
   background: var(--state-warn);
-}
-
-/* ── Resources (temporary list in the canvas area until step 7) ─────────────────────────── */
-
-.canvas-list {
-  min-width: 0;
-  place-self: stretch;
-  align-self: start;
-  width: 100%;
-  max-width: 820px;
-  margin: 0 auto;
-  display: grid;
-  gap: 14px;
-}
-
-.canvas-toolbar {
-  display: flex;
-  justify-content: flex-end;
 }
 
 .resources {
@@ -698,46 +566,6 @@ body {
   gap: 8px;
 }
 
-.kind-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-}
-
-.kind {
-  font: inherit;
-  width: 100%;
-  display: grid;
-  gap: 2px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
-  text-align: left;
-  cursor: pointer;
-}
-
-.kind:hover {
-  border-color: var(--accent);
-}
-
-.kind-label {
-  font-weight: 600;
-}
-
-.kind-blurb {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-.create-back {
-  margin: 0;
-  min-height: 1em;
-}
-
 .link-button {
   font: inherit;
   padding: 0;
@@ -761,12 +589,6 @@ body {
 .field label {
   font-size: 0.85rem;
   font-weight: 600;
-}
-
-.field-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
 }
 
 .field-hint {
@@ -810,12 +632,6 @@ body {
   border: 1px solid var(--border);
   border-left-width: 4px;
   font-size: 0.9rem;
-}
-
-.review-passed {
-  border-left-color: var(--state-ok);
-  display: grid;
-  gap: 8px;
 }
 
 .review-passed-title,
@@ -865,52 +681,6 @@ body {
 .rules-title {
   margin: 4px 0 0;
   font-size: 0.9rem;
-}
-
-.rule-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  font-size: 0.85rem;
-}
-
-.rule-item {
-  display: grid;
-  grid-template-columns: 3.4rem minmax(0, 1fr) auto;
-  gap: 8px;
-  align-items: baseline;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.rule-main {
-  display: grid;
-  gap: 1px;
-  min-width: 0;
-}
-
-.rule-name {
-  justify-self: start;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-  text-align: left;
-}
-
-.rule-desc {
-  color: var(--text-muted);
-  overflow-wrap: anywhere;
-}
-
-.rule-default .rule-name,
-.rule-default .rule-priority {
-  color: var(--text-muted);
-  font-weight: 400;
-}
-
-.rule-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 2px;
 }
 
 .power {
@@ -1545,16 +1315,6 @@ tr.rule-default td {
     grid-template-areas: 'top' 'quest' 'canvas' 'inspector' 'bottom';
   }
 
-  .pane-quest,
-  .pane-inspector {
-    border: none;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .topbar {
-    padding: 10px 16px;
-  }
-
   .res {
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
@@ -1563,10 +1323,6 @@ tr.rule-default td {
   .res-detail {
     white-space: normal;
     overflow-wrap: anywhere;
-  }
-
-  .canvas-toolbar {
-    justify-content: flex-start;
   }
 
   .pane {
@@ -1731,7 +1487,6 @@ tr.rule-default td {
   height: 16px;
   accent-color: var(--accent);
 }
-
 
 /* ── Quest panel (step 10) ──────────────────────────────────────────────────────────────── */
 

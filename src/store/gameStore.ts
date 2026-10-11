@@ -26,9 +26,6 @@ export const SANDBOX_EPOCH_MS = Date.UTC(2026, 9, 16, 6, 0, 0)
  */
 export const SANDBOX_SUBSCRIPTION = { subscriptionId: '5a4d0b0c-0000-4000-8000-5a4d0b0c0001', displayName: 'Sandbox' } as const
 
-/** Bottom panel tabs. Only tools that work are listed; more arrive with their steps. */
-export type BottomTab = 'activity-log' | 'deployments' | 'metrics' | 'availability' | 'alerts' | 'ip-flow-verify' | 'effective-rules'
-
 /**
  * The "Create a resource" panel. `kind` null shows the type picker. `preset` pre-fills the form, e.g. to
  * edit an existing subnet (a write with the same name updates it) or add a rule to a chosen NSG.
@@ -69,7 +66,6 @@ export const FLOW_SELECTION_PREFIX = 'flow:'
 /** Everything that isn't the simulated world: what the player is looking at. (The mission's mode and hints are in the world.) */
 export interface Session {
   ui: {
-    bottomTab: BottomTab
     /** Where the player is in the portal shell: route, back stack, map, side pane, ticket (spec §5). */
     nav: Nav
     canvas: { layer: CanvasLayer; watched: WatchedFlow[] }
@@ -98,7 +94,6 @@ export interface GameState {
   checkAll(commands: PlayerCommand[]): Refusal | null
   /** Advance by real elapsed milliseconds (scaled by speed, nothing while paused). */
   tick(realMs: number): void
-  selectTab(tab: BottomTab): void
   /** Go to a page. The current one goes on the back stack (unless it's the same page); map and side pane close. */
   navigate(route: Route, options?: { replace?: boolean }): void
   goBack(): void
@@ -165,7 +160,7 @@ export function createGameStore({ world, registry }: { world: World; registry?: 
     return {
       world,
       session: {
-        ui: { bottomTab: 'activity-log', nav: initialNav(), canvas: { layer: 'network', watched: [] }, seenMessages: 0, info: null },
+        ui: { nav: initialNav(), canvas: { layer: 'network', watched: [] }, seenMessages: 0, info: null },
       },
       lastRefusal: null,
 
@@ -195,10 +190,6 @@ export function createGameStore({ world, registry }: { world: World; registry?: 
         const current = get().world
         const next = advance(current, realMs, runtime().systems)
         if (next !== current) set({ world: next })
-      },
-
-      selectTab(tab) {
-        set(s => ({ session: { ...s.session, ui: { ...s.session.ui, bottomTab: tab } } }))
       },
 
       navigate(route, options) {

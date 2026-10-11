@@ -81,7 +81,7 @@ export const VNET_SECTIONS: Record<string, SectionDef> = {
     Commands: ({ target }) => <AddButton label="Subnet" guide="vnet:addSubnet" request={{ kind: 'subnet', preset: { virtualNetworkId: target.id } }} />,
     Body: VnetSubnets,
   },
-  diagram: { Body: () => <MapView /> },
+  diagram: { Body: ({ target }) => <MapView scope={{ vnetId: target.id }} /> },
 }
 
 function AddButton({ label, request, guide }: { label: string; request: { kind: string; preset?: Record<string, string> }; guide: string }) {

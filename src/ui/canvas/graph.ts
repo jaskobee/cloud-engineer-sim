@@ -295,7 +295,30 @@ export function evaluateWatchedFlow(world: World, flow: WatchedFlow): FlowEvalua
 
 // ── The graph ──────────────────────────────────────────────────────────────────────────────────
 
-export function buildCanvasGraph(world: World, watched: readonly WatchedFlow[]): CanvasGraph {
+/** What the map shows: everything, or one virtual network (Virtual network > Diagram, PORTAL-11). */
+export type CanvasScope = { vnetId: string } | null
+
+export function buildCanvasGraph(world: World, watched: readonly WatchedFlow[], scope: CanvasScope = null): CanvasGraph {
+  const graph = buildFullGraph(world, watched)
+  return scope ? scopeToVnet(graph, scope.vnetId) : graph
+}
+
+/**
+ * One virtual network: its box, its subnets and the units drawn inside them, plus the Internet; edges whose
+ * ends are both kept. Positions stay as laid out; the canvas fits the view to what's left.
+ */
+function scopeToVnet(graph: CanvasGraph, vnetId: string): CanvasGraph {
+  const vnet = graph.boxes.find(b => b.id === key(vnetId))
+  if (!vnet) return { boxes: [], nodes: graph.nodes.filter(n => n.id === INTERNET_ID), edges: [] }
+  const inside = (r: { x: number; y: number; width: number; height: number }) =>
+    r.x >= vnet.x && r.y >= vnet.y && r.x + r.width <= vnet.x + vnet.width && r.y + r.height <= vnet.y + vnet.height
+  const boxes = graph.boxes.filter(b => b === vnet || (b.kind === 'subnet' && inside(b)))
+  const nodes = graph.nodes.filter(n => n.id === INTERNET_ID || inside(n))
+  const kept = new Set([...boxes.map(b => b.id), ...nodes.map(n => n.id)])
+  return { boxes, nodes, edges: graph.edges.filter(e => kept.has(e.source) && kept.has(e.target)) }
+}
+
+function buildFullGraph(world: World, watched: readonly WatchedFlow[]): CanvasGraph {
   const boxes: CanvasBox[] = []
   const nodes: CanvasNode[] = []
   const edges: CanvasEdge[] = []

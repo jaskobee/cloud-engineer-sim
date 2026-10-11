@@ -7,7 +7,7 @@ import { FLOW_SELECTION_PREFIX, selectedIdOf, type CanvasLayer } from '../../sto
 import { GameStoreContext, useGame } from '../gameContext.ts'
 import { TrafficEdge } from './CanvasEdges.tsx'
 import { BoxNode, CardNode, type BoxFlowNode, type CardFlowNode } from './CanvasNodes.tsx'
-import { buildCanvasGraph, type CanvasGraph } from './graph.ts'
+import { buildCanvasGraph, type CanvasGraph, type CanvasScope } from './graph.ts'
 import { useWatchedFlows } from './watched.ts'
 
 /**
@@ -29,17 +29,17 @@ const LAYERS: { id: CanvasLayer; label: string }[] = [
 ]
 
 /** The graph, rebuilt when the tenant, runtime or watched flows change — never on clock ticks. */
-function useCanvasGraph(): CanvasGraph {
+function useCanvasGraph(scope: CanvasScope): CanvasGraph {
   const tenant = useGame(s => s.world.tenant)
   const runtime = useGame(s => s.world.runtime)
   const watched = useWatchedFlows()
   const store = useContext(GameStoreContext)
   return useMemo(() => {
     if (!store) throw new Error('No game store')
-    return buildCanvasGraph(store.getState().world, watched)
+    return buildCanvasGraph(store.getState().world, watched, scope)
     // tenant and runtime are the parts of the world the graph reads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenant, runtime, watched, store])
+  }, [tenant, runtime, watched, store, scope?.vnetId])
 }
 
 type Rect = { x: number; y: number; width: number; height: number }
@@ -52,13 +52,12 @@ function handlesFor(a: Rect, b: Rect): { sourceHandle: string; targetHandle: str
   return dy >= 0 ? { sourceHandle: 'b-s', targetHandle: 't-t' } : { sourceHandle: 't-s', targetHandle: 'b-t' }
 }
 
-export function ArchitectureCanvas() {
-  const graph = useCanvasGraph()
+export function ArchitectureCanvas({ scope = null }: { scope?: CanvasScope } = {}) {
+  const graph = useCanvasGraph(scope)
   const layer = useGame(s => s.session.ui.canvas.layer)
   const setLayer = useGame(s => s.setCanvasLayer)
   const selectedId = useGame(selectedIdOf)
   const select = useGame(s => s.select)
-  const startCreate = useGame(s => s.startCreate)
   const watchedCount = useWatchedFlows().length
   const selectedKey = selectedId?.toLowerCase() ?? null
 
@@ -132,7 +131,6 @@ export function ArchitectureCanvas() {
             <button key={l.id} type="button" className="seg-btn" aria-pressed={layer === l.id} onClick={() => setLayer(l.id)}>{l.label}</button>
           ))}
         </div>
-        <button type="button" className="button button-primary" onClick={() => startCreate({ kind: null })}>Create a resource</button>
       </div>
       {watchedCount === 0 && (
         <p className="canvas-hint">To watch a connection here, check it with IP flow verify and choose <strong>Watch on canvas</strong>.</p>

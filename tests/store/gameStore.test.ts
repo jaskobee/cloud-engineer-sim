@@ -11,7 +11,7 @@ describe('game store', () => {
     const s = store().getState()
     expect(s.world.rng.seed).toBe('store-test')
     expect(s.session).toEqual({
-      ui: { bottomTab: 'activity-log', nav: initialNav(), canvas: { layer: 'network', watched: [] }, seenMessages: 0, info: null },
+      ui: { nav: initialNav(), canvas: { layer: 'network', watched: [] }, seenMessages: 0, info: null },
     })
     expect(s.lastRefusal).toBeNull()
   })

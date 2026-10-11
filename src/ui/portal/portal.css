@@ -713,8 +713,8 @@
   margin-bottom: 24px;
 }
 
-.power {
-  margin: 0 0 12px;
+.page-body > .power {
+  margin: 0 0 16px;
 }
 
 /* ── Create wizard (PORTAL-6) ───────────────────────────────────────────────────────────────── */
