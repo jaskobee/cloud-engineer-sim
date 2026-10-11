@@ -1,6 +1,6 @@
 import { Button, DrawerBody, DrawerHeader, DrawerHeaderTitle, OverlayDrawer } from '@fluentui/react-components'
 import { Dismiss20Regular } from '@fluentui/react-icons'
-import { CreatePanel } from '../CreatePanel.tsx'
+import { ChildPane } from './create/ChildPane.tsx'
 import { FlowInspector } from '../canvas/FlowInspector.tsx'
 import { useGame } from '../gameContext.ts'
 import { paneTitle } from './panes.ts'
@@ -17,7 +17,7 @@ export function ContextPaneHost() {
       </DrawerHeader>
       <DrawerBody>
         {pane?.kind === 'flow' && <FlowInspector flowId={pane.flowId} />}
-        {pane?.kind === 'create' && <CreatePanel key={JSON.stringify(pane.request)} request={pane.request} />}
+        {pane?.kind === 'create' && pane.request.kind && <ChildPane key={JSON.stringify(pane.request)} kind={pane.request.kind} preset={pane.request.preset ?? {}} />}
       </DrawerBody>
     </OverlayDrawer>
   )
