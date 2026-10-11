@@ -157,7 +157,7 @@ function plan(world: World, registry: Registry, command: Command): Plan {
     if ('kind' in handler) return { kind: 'refused', refusal: handler }
     const target = handler.write(cmd)
     if (target === null) {
-      if (commands.length === 1) {
+      if (command.type !== DEPLOYMENT_COMMAND) {
         const refusal = handler.validate(w, cmd)
         return refusal ? { kind: 'refused', refusal } : { kind: 'control', handler }
       }
