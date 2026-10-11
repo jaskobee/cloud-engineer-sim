@@ -249,6 +249,11 @@
     "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/virtual-network-network-interface-addresses",
     "updated": "2025-10-08T22:11:00Z"
   },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/virtual-network-static-public-ip": {
+    "key": "L-VMSTATICPIP",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/ip-services/virtual-network-static-public-ip",
+    "updated": "2026-02-25T06:24:00Z"
+  },
   "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group": {
     "key": "L-NSGMAN",
     "url": "https://learn.microsoft.com/en-us/azure/virtual-network/manage-network-security-group",
@@ -268,6 +273,11 @@
     "key": "L-NSG",
     "url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview",
     "updated": "2025-10-23T11:11:00Z"
+  },
+  "https://learn.microsoft.com/en-us/azure/virtual-network/quick-create-portal": {
+    "key": "L-VNETQS",
+    "url": "https://learn.microsoft.com/en-us/azure/virtual-network/quick-create-portal",
+    "updated": "2026-03-27T15:55:00Z"
   },
   "https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview": {
     "key": "L-SVCTAGS",
