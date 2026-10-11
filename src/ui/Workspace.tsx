@@ -1,23 +1,12 @@
-import { lazy, Suspense, useContext, useEffect } from 'react'
+import { useContext, useEffect } from 'react'
 import { browserScheduler, startTickLoop } from '../store/tickLoop.ts'
 import { browserStorage, readProfile, writeProfile, writeSave } from '../store/persistence.ts'
-import { BottomTools } from './BottomTools.tsx'
-import { CreatePanel } from './CreatePanel.tsx'
-import { Inspector } from './Inspector.tsx'
-import { ResourceList } from './ResourceList.tsx'
-import { FlowInspector } from './canvas/FlowInspector.tsx'
-import { FLOW_SELECTION_PREFIX, selectedIdOf, type CreateRequest } from '../store/gameStore.ts'
-import { useMediaQuery } from './useMediaQuery.ts'
-import { GameStoreContext, useGame } from './gameContext.ts'
-import { TimeControls } from './TimeControls.tsx'
-import { QuestPanel } from './QuestPanel.tsx'
+import { GameStoreContext } from './gameContext.ts'
+import { Shell } from './portal/Shell.tsx'
 import { InfoDialog } from './Info.tsx'
 import { missionResult, MISSIONS, recordRun, runIdOf } from '../missions/index.ts'
 
-/** React Flow is only loaded where the canvas is shown (wide screens), keeping the first load small. */
-const ArchitectureCanvas = lazy(() => import('./canvas/ArchitectureCanvas.tsx').then(m => ({ default: m.ArchitectureCanvas })))
-
-/** The player's desk: quest on the left, architecture in the middle, inspector on the right, tools below. */
+/** The player's desk: the portal shell (D-7) plus the tick loop, autosave and career recording. */
 export function Workspace() {
   const store = useContext(GameStoreContext)
 
@@ -56,100 +45,9 @@ export function Workspace() {
   }, [store])
 
   return (
-    <div className="workspace">
-      <header className="topbar">
-        <div className="topbar-title">
-          <span className="brand">Cloud Engineer Simulator</span>
-          <TopbarContext />
-        </div>
-        <TimeControls />
-      </header>
-
-      <aside className="pane pane-quest" aria-labelledby="quest-title">
-        <QuestPanel />
-      </aside>
-
-      <main className="pane pane-canvas" aria-labelledby="canvas-title">
-        <h2 id="canvas-title" className="visually-hidden">Architecture</h2>
-        <CanvasBody />
-      </main>
-
-      <InspectorPane />
-
-      <section className="pane pane-bottom" aria-label="Tools">
-        <BottomTools />
-      </section>
-      <InfoDialog />
-    </div>
-  )
-}
-
-function TopbarContext() {
-  const missionId = useGame(s => s.world.mission?.id ?? null)
-  const def = missionId ? MISSIONS[missionId] : undefined
-  return <span className="topbar-context">{def ? `${def.client.name} · ${def.title}` : 'Sandbox subscription, no client assigned yet'}</span>
-}
-
-function CanvasBody() {
-  const narrow = useMediaQuery('(max-width: 900px)')
-  const startCreate = useGame(s => s.startCreate)
-  const hasGroups = useGame(s => Object.keys(s.world.tenant.resourceGroups).length > 0)
-  const create = (
-    <button type="button" className="button button-primary" onClick={() => startCreate({ kind: hasGroups ? null : 'resourceGroup' })}>
-      {hasGroups ? 'Create a resource' : 'Create a resource group'}
-    </button>
-  )
-  if (!hasGroups) {
-    return (
-      <div className="canvas-empty">
-        <p className="canvas-empty-title">Nothing deployed yet</p>
-        <p className="empty">Everything you build appears here, inside its resource group and network. Start with a resource group to hold it.</p>
-        {create}
-      </div>
-    )
-  }
-  // Below 900 px the resource list replaces the canvas (D-5). Both read the same world.
-  if (narrow) {
-    return (
-      <div className="canvas-list">
-        <div className="canvas-toolbar">{create}</div>
-        <ResourceList />
-      </div>
-    )
-  }
-  return (
-    <Suspense fallback={<p className="empty">Loading the architecture canvas…</p>}>
-      <ArchitectureCanvas />
-    </Suspense>
-  )
-}
-
-/** Remounts when what it shows changes, so each resource or form opens scrolled to the top. */
-function InspectorPane() {
-  const key = useGame(s => JSON.stringify([s.session.ui.nav.route, s.session.ui.nav.contextPane]))
-  return (
-    <aside key={key} className="pane pane-inspector" aria-label="Inspector">
-      <InspectorBody />
-    </aside>
-  )
-}
-
-function InspectorBody() {
-  const selected = useGame(selectedIdOf)
-  const creating = useGame(s => {
-    const { route, contextPane } = s.session.ui.nav
-    if (contextPane?.kind === 'create') return JSON.stringify(contextPane.request)
-    if (route.page === 'createPicker') return JSON.stringify({ kind: null })
-    if (route.page === 'create') return JSON.stringify({ kind: route.kind, ...(route.preset ? { preset: route.preset } : {}) })
-    return null
-  })
-  if (creating) return <CreatePanel request={JSON.parse(creating) as CreateRequest} />
-  if (selected?.startsWith(FLOW_SELECTION_PREFIX)) return <FlowInspector flowId={selected.slice(FLOW_SELECTION_PREFIX.length)} />
-  if (selected !== null) return <Inspector id={selected} />
-  return (
     <>
-      <h2 className="pane-title">Inspector</h2>
-      <p className="empty">Select a resource to see its settings and what it's connected to.</p>
+      <Shell />
+      <InfoDialog />
     </>
   )
 }

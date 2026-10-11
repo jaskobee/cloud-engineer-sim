@@ -9,8 +9,8 @@ const labels = (route: Route) => breadcrumbFor(route, world).map(c => c.label)
 
 describe('routes', () => {
   it('compares routes by value', () => {
-    expect(sameRoute({ page: 'browse', type: 'all' }, { page: 'browse', type: 'all' })).toBe(true)
-    expect(sameRoute({ page: 'browse', type: 'all' }, { page: 'browse', type: 'resourceGroups' })).toBe(false)
+    expect(sameRoute({ page: 'browse', type: 'resourceGroups' }, { page: 'browse', type: 'resourceGroups' })).toBe(true)
+    expect(sameRoute({ page: 'browse', type: 'resourceGroups' }, { page: 'allServices' })).toBe(false)
   })
 
   it('routes a resource to its overview, and a child resource to its parent section', () => {
@@ -28,6 +28,10 @@ describe('routes', () => {
     expect(labels({ page: 'resource', id: VM_GAME, section: 'overview' })).toEqual(['Home', 'Virtual machines', 'vm-game-01'])
     expect(labels({ page: 'resource', id: rgId(), section: 'overview' })).toEqual(['Home', 'Resource groups', 'rg-pixelforge-prod'])
     expect(labels({ page: 'createPicker' })).toEqual(['Home', 'Create a resource'])
+    expect(labels({ page: 'allServices' })).toEqual(['Home', 'All services'])
+    // No list of its own (there's no verified "All resources" list): through its resource group.
+    const disk = Object.values(world.tenant.resources).find(r => r.type === azure.DISK_TYPE)!
+    expect(labels({ page: 'resource', id: disk.id, section: 'overview' })).toEqual(['Home', 'Resource groups', 'rg-pixelforge-prod', disk.name])
     expect(labels({ page: 'create', kind: 'virtualNetwork', tab: 'basics' })).toEqual(['Home', 'Create a resource', 'Create virtual network'])
     expect(labels({ page: 'service', service: 'networkWatcher', section: 'ipFlowVerify' })).toEqual(['Home', 'Network Watcher'])
     // Every crumb but the last links somewhere.
@@ -76,7 +80,7 @@ describe('store navigation', () => {
     const st = store()
     st.getState().toggleMap(true)
     st.getState().openContextPane({ kind: 'flow', flowId: 'x' })
-    st.getState().navigate({ page: 'browse', type: 'all' })
+    st.getState().navigate({ page: 'allServices' })
     expect(st.getState().session.ui.nav).toMatchObject({ map: false, contextPane: null })
   })
 

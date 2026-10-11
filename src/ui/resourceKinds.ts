@@ -43,3 +43,17 @@ const TYPE_LABELS: Record<string, string> = {
 export const typeLabel = (type: string): string => TYPE_LABELS[type.toLowerCase()] ?? type
 
 export const kindLabel = (kind: string): string => RESOURCE_KINDS.find(k => k.kind === kind)?.label ?? kind
+
+const KIND_BY_TYPE: Record<string, string> = {
+  resourcegroups: 'resourceGroup',
+  [azure.VNET_TYPE.toLowerCase()]: 'virtualNetwork',
+  [azure.NSG_TYPE.toLowerCase()]: 'networkSecurityGroup',
+  [azure.PUBLIC_IP_TYPE.toLowerCase()]: 'publicIp',
+  [azure.NIC_TYPE.toLowerCase()]: 'networkInterface',
+  [azure.VM_TYPE.toLowerCase()]: 'virtualMachine',
+  [azure.WORKSPACE_TYPE.toLowerCase()]: 'workspace',
+  [azure.COMPONENT_TYPE.toLowerCase()]: 'component',
+}
+
+/** What "+ Create" on a service list creates (`resourceGroups` or an ARM type). */
+export const kindForType = (type: string): string | null => KIND_BY_TYPE[type.toLowerCase()] ?? null

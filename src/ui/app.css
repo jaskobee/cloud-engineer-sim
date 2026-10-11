@@ -25,7 +25,10 @@
   /* The sim clock is a console readout: dark in both themes. */
   --console-bg: #1b1a19;
   --console-fg: #f3f2f1;
+}
 
+/* The app's own root (Fluent also puts this class on its portal mount nodes, which must stay unstyled). */
+.portal-root:not([data-portal-node]) {
   height: 100%;
   background: var(--bg);
   color: var(--text);

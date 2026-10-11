@@ -9,7 +9,9 @@ export type ServiceId = 'monitor' | 'networkWatcher'
 
 export type Route =
   | { page: 'home' }
-  /** A service list: an ARM type (lower case), or every resource / every resource group. */
+  /** "All services" (PORTAL-2): every service the simulator has. */
+  | { page: 'allServices' }
+  /** A service list: an ARM type (lower case), or `resourceGroups`. */
   | { page: 'browse'; type: string }
   /** A resource group or resource, at one section of its service menu. */
   | { page: 'resource'; id: ArmId; section: string }
@@ -46,7 +48,6 @@ export const CHILD_KINDS: readonly string[] = ['subnet', 'securityRule', 'webTes
 
 /** The service list each resource type belongs to (lower-case ARM type → list label). */
 const BROWSE_LABELS: Record<string, string> = {
-  all: 'All resources',
   resourceGroups: 'Resource groups',
   [azure.VM_TYPE.toLowerCase()]: 'Virtual machines',
   [azure.VNET_TYPE.toLowerCase()]: 'Virtual networks',
@@ -57,7 +58,12 @@ const BROWSE_LABELS: Record<string, string> = {
   [azure.COMPONENT_TYPE.toLowerCase()]: 'Application Insights',
 }
 
-export const browseLabel = (type: string): string => BROWSE_LABELS[type] ?? BROWSE_LABELS[type.toLowerCase()] ?? 'All resources'
+const BROWSE_BY_KEY = new Map(Object.entries(BROWSE_LABELS).map(([k, v]) => [k.toLowerCase(), v]))
+
+export const browseLabel = (type: string): string => BROWSE_BY_KEY.get(type.toLowerCase()) ?? type
+
+/** True when the type has a service list of its own (PORTAL-5). */
+export const hasBrowseList = (type: string): boolean => BROWSE_BY_KEY.has(type.toLowerCase())
 
 const SERVICE_LABELS: Record<ServiceId, string> = { monitor: 'Monitor', networkWatcher: 'Network Watcher' }
 export const serviceLabel = (service: ServiceId): string => SERVICE_LABELS[service]
@@ -89,11 +95,13 @@ export interface Crumb {
 }
 
 /** The breadcrumb for a route: Home, the list or service it belongs to, then the page itself. */
-export function breadcrumbFor(route: Route, world: World): Crumb[] {
+export function breadcrumbFor(route: Route, world: Pick<World, 'deployments'>): Crumb[] {
   const home: Crumb = { label: 'Home', route: HOME }
   switch (route.page) {
     case 'home':
       return [{ label: 'Home', route: null }]
+    case 'allServices':
+      return [home, { label: 'All services', route: null }]
     case 'browse':
       return [home, { label: browseLabel(route.type), route: null }]
     case 'service':
@@ -110,8 +118,12 @@ export function breadcrumbFor(route: Route, world: World): Crumb[] {
       const parsed = azure.parseArmId(route.id)
       const name = parsed ? (parsed.names.at(-1) ?? parsed.resourceGroupName) : route.id
       const listType = parsed?.type ? parsed.type.toLowerCase() : 'resourceGroups'
-      const list = BROWSE_LABELS[listType] ? listType : 'all'
-      return [home, { label: browseLabel(list), route: { page: 'browse', type: list } }, { label: name, route: null }]
+      const groups: Crumb = { label: browseLabel('resourceGroups'), route: { page: 'browse', type: 'resourceGroups' } }
+      if (hasBrowseList(listType)) return [home, { label: browseLabel(listType), route: { page: 'browse', type: listType } }, { label: name, route: null }]
+      // No service list of its own (disks, availability tests, alert rules): reach it through its resource group.
+      const groupId = parsed ? azure.resourceGroupId(parsed.subscriptionId, parsed.resourceGroupName) : null
+      const group: Crumb = { label: parsed?.resourceGroupName ?? '', route: groupId ? { page: 'resource', id: groupId, section: 'overview' } : null }
+      return [home, groups, group, { label: name, route: null }]
     }
   }
 }
