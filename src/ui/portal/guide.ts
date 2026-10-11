@@ -14,6 +14,8 @@ export interface ResolvedStep {
   kind: PathStep['target']['kind']
   route: Route | null
   guide: string
+  /** The page the step's control opens (Create opens the create page), so the path moves on once it's open. */
+  opens?: Route
 }
 
 export function resolvePath(steps: readonly PathStep[], def: MissionDef, world: World): ResolvedStep[] {
@@ -38,7 +40,8 @@ export function resolvePath(steps: readonly PathStep[], def: MissionDef, world: 
         : null
       out.push({ ...base, route, guide: `menu:${t.section}` })
     } else {
-      out.push({ ...base, route: null, guide: t.id })
+      const kind = t.id.startsWith('create:') ? t.id.slice('create:'.length) : null
+      out.push({ ...base, route: null, guide: t.id, ...(kind ? { opens: { page: 'create', kind, tab: 'basics' } as Route } : {}) })
     }
   }
   return out
@@ -48,7 +51,9 @@ export function resolvePath(steps: readonly PathStep[], def: MissionDef, world: 
 export function nextStepIndex(steps: readonly ResolvedStep[], current: Route): number {
   for (let i = steps.length - 1; i >= 0; i--) {
     const r = steps[i]?.route
-    if (r && sameRoute(r, current)) return Math.min(i + 1, steps.length - 1)
+    const opens = steps[i]?.opens
+    const opened = opens?.page === 'create' && current.page === 'create' && opens.kind === current.kind
+    if ((r && sameRoute(r, current)) || opened) return Math.min(i + 1, steps.length - 1)
   }
   return 0
 }

@@ -1,6 +1,6 @@
 import { useContext, useId, useMemo, useState } from 'react'
 import { ASSISTANCE_MODES, type AssistanceMode, type MissionMessage, type Refusal } from '../engine/index.ts'
-import { hintsUsed, infoTopic, INFO_TOPICS, judgeReport, levelFor, missionResult, MISSIONS, objectiveStatus, recordRun, runIdOf, type MissionDef, type ObjectiveDef, type PathStep, type StageDef } from '../missions/index.ts'
+import { currentBuildStep, hintsUsed, infoTopic, INFO_TOPICS, judgeReport, levelFor, missionResult, MISSIONS, objectiveStatus, recordRun, runIdOf, type MissionDef, type ObjectiveDef, type PathStep, type StageDef } from '../missions/index.ts'
 import { formatSimTime } from './format.ts'
 import { GameStoreContext, useGame } from './gameContext.ts'
 import { InfoButton } from './Info.tsx'
@@ -8,6 +8,7 @@ import { MODE_TEXT } from './modes.ts'
 import { browserStorage, readProfile } from '../store/persistence.ts'
 import { RefusalNotice } from './RefusalNotice.tsx'
 import { PortalPath } from './portal/PortalPath.tsx'
+import { BuildPlan } from './BuildPlan.tsx'
 
 /**
  * The quest panel (step 10): the client's ticket and messages, where the mission is, what's left to do,
@@ -32,9 +33,13 @@ function MissionQuest({ def }: { def: MissionDef }) {
   const stageId = useGame(s => s.world.mission?.stage)
   const mode = useGame(s => s.world.mission?.mode ?? 'guided')
   const completed = useGame(s => s.world.mission?.completedAt !== undefined)
+  const planStepsLeft = usePlanStepsLeft(def)
   const stage = def.stages.find(s => s.id === stageId)
   if (!stage) return null
   const index = def.stages.indexOf(stage)
+  // Guided gets the recipe (D-8); Standard and Expert work from the requirements alone.
+  const planShown = mode === 'guided' && !completed && def.buildPlan?.stage === stage.id
+  const planOpen = planShown && planStepsLeft
   return (
     <div className="quest">
       <p className="quest-client">{def.client.name}</p>
@@ -51,16 +56,30 @@ function MissionQuest({ def }: { def: MissionDef }) {
         <p className="quest-goal-title">Stage {index + 1} of {def.stages.length}: {stage.title}</p>
         <p>{stage.goal}</p>
       </section>
+      {planShown && def.buildPlan && <BuildPlan def={def} plan={def.buildPlan} />}
       <Inbox def={def} />
       {stage.portalPath && !completed && <ObjectivePath def={def} hintKey={`stage/${stage.id}`} steps={stage.portalPath} mode={mode} highlight={stage.objectives.length === 0} />}
       {stage.hints && stage.hints.length > 0 && <Hints hintKey={`stage/${stage.id}`} hints={stage.hints} mode={mode} />}
-      {stage.objectives.length > 0 && <Objectives def={def} stage={stage} mode={mode} />}
+      {stage.objectives.length > 0 && <Objectives def={def} stage={stage} mode={mode} planShown={planShown} planOpen={planOpen} />}
       {stage.acceptsReport && <ReportForm def={def} mode={mode} />}
       {completed && <Completion def={def} />}
       <Concepts />
       <ModeSwitch mode={mode} />
     </div>
   )
+}
+
+/** True while the mission's build plan has steps left (recomputed when the infrastructure or the apps change). */
+function usePlanStepsLeft(def: MissionDef): boolean {
+  const tenant = useGame(s => s.world.tenant)
+  const runtime = useGame(s => s.world.runtime)
+  const store = useContext(GameStoreContext)
+  return useMemo(() => {
+    const plan = def.buildPlan
+    const world = store?.getState().world
+    return !!plan && !!world && currentBuildStep(plan, world) < plan.steps.length
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [def, store, tenant, runtime])
 }
 
 /** Objective status, recomputed when the infrastructure or the apps change, not on every tick. */
@@ -77,7 +96,7 @@ function useObjectiveStatus(def: MissionDef) {
   }, [def, tenant, runtime, external, store])
 }
 
-function Objectives({ def, stage, mode }: { def: MissionDef; stage: StageDef; mode: AssistanceMode }) {
+function Objectives({ def, stage, mode, planShown, planOpen }: { def: MissionDef; stage: StageDef; mode: AssistanceMode; planShown: boolean; planOpen: boolean }) {
   const status = useObjectiveStatus(def)
   const shown = stage.objectives.map(id => def.objectives.find(o => o.id === id)).filter((o): o is ObjectiveDef => !!o)
   const ok = (id: string) => status.find(s => s.id === id)?.ok === true
@@ -95,12 +114,13 @@ function Objectives({ def, stage, mode }: { def: MissionDef; stage: StageDef; mo
   }
   return (
     <section className="quest-section" aria-label="Objectives">
-      <h3 className="quest-heading">{mode === 'guided' ? 'Requirements' : 'Acceptance criteria'} <span className="quest-count">{met}/{shown.length}</span></h3>
+      <h3 className="quest-heading">{planShown ? 'What the client checks' : mode === 'guided' ? 'Requirements' : 'Acceptance criteria'} <span className="quest-count">{met}/{shown.length}</span></h3>
       <ul className="objectives">
         {shown.map(o => {
           const s = status.find(x => x.id === o.id)
           const done = s?.ok === true
-          const isNext = mode === 'guided' && o.id === next
+          // With a build plan, the plan's step is the one thing that glows.
+          const isNext = mode === 'guided' && !planOpen && o.id === next
           return (
             <li key={o.id} className={`objective${done ? ' is-done' : ''}${isNext ? ' is-next' : ''}`}>
               <span className="objective-mark" aria-hidden="true">{done ? '✓' : '○'}</span>

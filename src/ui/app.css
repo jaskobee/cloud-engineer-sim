@@ -2065,3 +2065,146 @@ tr.rule-default td {
   width: 100%;
   height: 8px;
 }
+
+/* Guided build plan (D-8) */
+.build-plan-intro,
+.build-plan-done {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.build-existing {
+  padding: 8px 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.build-existing-title {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.build-existing ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.build-steps {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.build-step {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.build-step.is-current {
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.build-step summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.build-step summary::-webkit-details-marker {
+  display: none;
+}
+
+.build-step-mark {
+  flex: 0 0 18px;
+  color: var(--text-muted);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.build-step.is-done .build-step-mark {
+  color: var(--state-ok);
+}
+
+.build-step-title {
+  font-weight: 550;
+  line-height: 1.4;
+}
+
+.build-step.is-done .build-step-title {
+  color: var(--text-muted);
+}
+
+.build-step-body {
+  display: grid;
+  gap: 8px;
+  padding: 0 10px 10px 36px;
+  font-size: 0.85rem;
+}
+
+.build-step-body p {
+  margin: 0;
+}
+
+.build-settings {
+  display: grid;
+  gap: 0;
+  margin: 0;
+}
+
+/* The ticket pane is narrow: each setting is a small card (label, value, why) rather than a three-column table. */
+.build-setting {
+  display: grid;
+  gap: 2px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+
+.build-setting dt {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.build-setting dd {
+  margin: 0;
+}
+
+.build-value {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.build-why {
+  color: var(--text-muted);
+}
+
+.build-rules {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.rule-chip {
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+a.rule-chip:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+

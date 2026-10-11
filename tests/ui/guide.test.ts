@@ -18,4 +18,15 @@ describe('the next step of a portal path', () => {
   it('a step the player can already see from later in the path wins (furthest match)', () => {
     expect(nextStepIndex([step('A', nsg, 'resource'), step('B', nsg, 'resource'), step('C', inbound, 'section')], nsg)).toBe(2)
   })
+
+  it('a Create control moves the path on once its create page is open, whatever the tab', () => {
+    const vms = { page: 'browse', type: 'microsoft.compute/virtualmachines' } as const
+    const path: ResolvedStep[] = [
+      step('Virtual machines', vms), { ...step('Create', null, 'anchor', 'create:virtualMachine'), opens: { page: 'create', kind: 'virtualMachine', tab: 'basics' } },
+      step('Networking', null, 'anchor', 'tab:networking'), step('Review + create', null, 'anchor', 'wizard:review'),
+    ]
+    expect(nextStepIndex(path, vms)).toBe(1)
+    expect(nextStepIndex(path, { page: 'create', kind: 'virtualMachine', tab: 'basics' })).toBe(2)
+    expect(nextStepIndex(path, { page: 'create', kind: 'virtualNetwork', tab: 'basics' })).toBe(0)
+  })
 })

@@ -48,7 +48,7 @@ const vmSettings = (name: string, subnet: string, publicIp: string, publicIpWhy:
 
 export const BUILD_PLAN: BuildPlan = {
   stage: 'build',
-  intro: 'Follow these steps in order. Each one says what to create, where in the portal, which values to use and why. The values are a recipe: other valid choices pass the client\'s checks too.',
+  intro: 'Lena\'s ticket (under Messages) says what the client needs. This plan says how to build it: each step names what to create, where in the portal, which values to use and why. Other valid choices pass the client\'s checks too.',
   steps: [
     {
       id: 'resource-group',

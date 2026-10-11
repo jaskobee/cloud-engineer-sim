@@ -70,6 +70,9 @@ test('portal workflow: Create a resource → wizard → Review + create → depl
   await page.getByRole('button', { name: 'Create a resource', exact: true }).first().click()
   await page.locator('.all-services').getByRole('button', { name: /^Network security group/ }).click()
   await expect(page.getByRole('heading', { level: 1, name: 'Create network security group' })).toBeVisible()
+  // No resource group is picked for you (Mia's test group is there too): create the production one.
+  await page.locator('.wizard').getByRole('button', { name: 'Create new' }).click()
+  await page.getByRole('textbox', { name: /Resource group \(new\)/ }).fill('rg-pixelforge-prod')
   await page.getByRole('textbox', { name: /Network security group name/ }).fill('nsg-snet-game')
   const footer = page.locator('.wizard-footer')
   await footer.getByRole('button', { name: 'Review + create', exact: true }).click()
@@ -93,6 +96,40 @@ test('portal workflow: Create a resource → wizard → Review + create → depl
   // The bell lists the deployment with Go to resource.
   await page.getByRole('button', { name: 'Notifications' }).click()
   await expect(page.getByText('Deployment succeeded').first()).toBeVisible()
+  expect(errors).toEqual([])
+})
+
+test('Guided: the build plan says what to build; the VM wizard creates the network interface and public IP (PORTAL-20)', async ({ page }) => {
+  const errors = trackErrors(page)
+  await page.goto('./')
+  await page.getByLabel(/Guided/).check()
+  await page.getByRole('button', { name: 'Take the job' }).click()
+  const plan = page.locator('.build-plan')
+  await expect(plan.getByRole('heading', { name: /Build plan/ })).toBeVisible()
+  await expect(plan.locator('.build-existing')).toContainText('rg-pixelforge-test')
+  await expect(plan.locator('.build-existing')).toContainText('Mia Becker')
+  await expect(plan.locator('.build-step.is-current')).toContainText('Create the production resource group')
+  await expect(plan.locator('.build-step.is-current .build-value').first()).toHaveText('rg-pixelforge-prod')
+
+  // Resource groups list: who created what (PORTAL-21s).
+  await plan.locator('.build-step.is-current').getByRole('button', { name: 'Resource groups' }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Resource groups' })).toBeVisible()
+  await expect(page.locator('table').getByText('Mia Becker')).toBeVisible()
+
+  // Create a virtual machine › Networking: Virtual network, Subnet, Public IP (Create new), NIC network security group.
+  await page.getByRole('combobox', { name: 'Search resources and services' }).fill('Virtual machines')
+  await page.keyboard.press('Enter')
+  await page.locator('[data-guide="create:virtualMachine"]').click()
+  await expect(page.locator('.wizard').getByText('Public inbound ports', { exact: true })).toBeVisible()
+  await page.getByRole('textbox', { name: /Virtual machine name/ }).fill('vm-game-01')
+  await page.getByRole('tab', { name: 'Networking' }).click()
+  await expect(page.locator('.wizard').getByText('NIC network security group', { exact: true })).toBeVisible()
+  await expect(page.getByRole('combobox', { name: /Public IP/ })).toHaveText(/\(new\) vm-game-01-ip/)
+  await page.locator('[data-guide="vm:createPublicIp"]').click()
+  const dialog = page.getByRole('dialog', { name: 'Create public IP address' })
+  await dialog.getByRole('textbox', { name: /Name/ }).fill('pip-game')
+  await dialog.getByRole('button', { name: 'OK' }).click()
+  await expect(page.getByRole('combobox', { name: /Public IP/ })).toHaveText(/\(new\) pip-game/)
   expect(errors).toEqual([])
 })
 

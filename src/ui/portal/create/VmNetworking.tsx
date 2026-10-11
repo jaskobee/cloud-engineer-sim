@@ -27,7 +27,7 @@ export function VmNetworking({ values, set, world }: TabProps) {
   const vnets = vnetsIn(world, values.location ?? 'westeurope')
   const vnetId = vnets.some(n => n.id === values.vnetId) ? values.vnetId ?? '' : ''
   const subnets = subnetsOf(world, vnetId)
-  const pipName = defaultPublicIpName(values)
+  const pipName = values.name || values.publicIpName ? defaultPublicIpName(values) : ''
   const pickVnet = (id: string) => {
     set('vnetId', id)
     set('subnetId', subnetsOf(world, id)[0]?.id ?? '')
@@ -41,7 +41,7 @@ export function VmNetworking({ values, set, world }: TabProps) {
         options={subnets.map(s => [s.id, `${s.name} (${String(s.properties.addressPrefix)})`])}
         {...(vnetId && subnets.length === 0 ? { hint: 'This virtual network has no subnet yet. Add one under Subnets.' } : {})} />
       <SelectField label="Public IP" value={values.publicIp === 'none' ? 'none' : 'new'} onChange={x => set('publicIp', x)}
-        options={[['new', `(new) ${pipName}`], ['none', 'None']]}
+        options={[['new', `(new) ${pipName || 'public IP named after the VM'}`], ['none', 'None']]}
         hint="Internet clients reach the VM only through a public IP. Leave it out for VMs nobody outside should reach." />
       <Link as="button" className="create-new-link" onClick={() => setDialog(true)} data-guide="vm:createPublicIp">Create new</Link>
       <FixedField label="NIC network security group" value="None" />

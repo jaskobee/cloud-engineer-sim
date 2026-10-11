@@ -15,13 +15,13 @@ export function TextField({ label, value, onChange, hint, placeholder, readOnly,
   )
 }
 
-export function SelectField({ label, value, onChange, options, hint, disabled, required }: {
-  label: string; value: string; onChange: (v: string) => void; options: [string, string][]; hint?: string; disabled?: boolean; required?: boolean
+export function SelectField({ label, value, onChange, options, hint, disabled, required, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; options: [string, string][]; hint?: string; disabled?: boolean; required?: boolean; placeholder?: string
 }) {
   const shown = options.find(o => o[0] === value)?.[1] ?? ''
   return (
     <Field label={label} hint={hint ?? null} required={required ?? false} className="form-field">
-      <Dropdown value={shown} selectedOptions={[value]} onOptionSelect={(_, d) => onChange(d.optionValue ?? '')} disabled={disabled ?? false}>
+      <Dropdown value={shown} selectedOptions={[value]} onOptionSelect={(_, d) => onChange(d.optionValue ?? '')} disabled={disabled ?? false} placeholder={placeholder ?? ''}>
         {options.map(([v, l]) => <Option key={v} value={v} text={l}>{l}</Option>)}
       </Dropdown>
     </Field>
@@ -69,7 +69,7 @@ export function ProjectDetails({ values, set, world, heading = true }: { values:
   const toggle = (on: boolean) => {
     setCreatingNew(on)
     set('newResourceGroup', on ? 'true' : '')
-    set('resourceGroupName', on ? '' : groups[0]?.name ?? '')
+    set('resourceGroupName', '')
   }
   return (
     <FormSection {...(heading ? { title: 'Project details' } : {})}>
@@ -78,7 +78,7 @@ export function ProjectDetails({ values, set, world, heading = true }: { values:
       {creatingNew ? (
         <TextField label="Resource group (new)" required value={values.resourceGroupName ?? ''} onChange={x => set('resourceGroupName', x)} placeholder="rg-pixelforge-prod" />
       ) : (
-        <SelectField label="Resource group" required value={values.resourceGroupName ?? ''} onChange={x => set('resourceGroupName', x)}
+        <SelectField label="Resource group" required value={values.resourceGroupName ?? ''} onChange={x => set('resourceGroupName', x)} placeholder="Select a resource group"
           options={groups.map(g => [g.name, g.name])} {...(groups.length === 0 ? { hint: 'No resource group in this subscription yet. Create new.' } : {})} />
       )}
       <Link as="button" className="create-new-link" onClick={() => toggle(!creatingNew)}>{creatingNew ? 'Use existing' : 'Create new'}</Link>
@@ -86,11 +86,14 @@ export function ProjectDetails({ values, set, world, heading = true }: { values:
   )
 }
 
-/** Defaults for Project details: the first subscription and its first resource group (or a new one). */
+/**
+ * Defaults for Project details: the first subscription, and no resource group picked yet (the player chooses, so
+ * nothing lands in a client's existing group by accident); Create new when the subscription has none.
+ */
 export function initialProject(world: World): Values {
   const sub = Object.values(world.tenant.subscriptions)[0]?.subscriptionId ?? ''
   const group = Object.values(world.tenant.resourceGroups)
     .filter(g => azure.parseArmId(g.id)?.subscriptionId === sub)
     .sort((a, b) => a.name.localeCompare(b.name))[0]
-  return { subscriptionId: sub, resourceGroupName: group?.name ?? '', newResourceGroup: group ? '' : 'true', location: 'westeurope', name: '' }
+  return { subscriptionId: sub, resourceGroupName: '', newResourceGroup: group ? '' : 'true', location: 'westeurope', name: '' }
 }
