@@ -1,7 +1,7 @@
 /** Rule IDs defined in Docs/AZURE_FACTS.md: the first cell of every table row, e.g. `| NSG-4 | … |`. */
 export function factIds(markdown: string): Set<string> {
   const ids = new Set<string>()
-  for (const m of markdown.matchAll(/^\|\s*([A-Z]{2,5}-\d+[a-z]?)\s*\|/gm)) ids.add(m[1] ?? '')
+  for (const m of markdown.matchAll(/^\|\s*([A-Z]{2,6}-\d+[a-z]?)\s*\|/gm)) ids.add(m[1] ?? '')
   return ids
 }
 

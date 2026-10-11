@@ -37,7 +37,7 @@ export function parseFacts(markdown: string): Map<string, RuleInfo> {
     if (/^L-[A-Z0-9-]+$/.test(first)) {
       const m = /^(.*?)\s+—\s+(https:\/\/\S+)$/.exec(row[1] ?? '')
       if (m) sources.set(first, { key: first, title: m[1] ?? first, url: m[2] ?? '' })
-    } else if (/^[A-Z]{2,5}-\d+[a-z]?$/.test(first)) {
+    } else if (/^[A-Z]{2,6}-\d+[a-z]?$/.test(first)) {
       rows.push(row)
     }
   }

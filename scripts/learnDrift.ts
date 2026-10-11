@@ -85,7 +85,7 @@ export function rulesCiting(markdown: string, key: string): string[] {
   for (const line of markdown.split('\n')) {
     const cells = line.split('|').map(c => c.trim())
     const id = cells[1] ?? ''
-    if (!/^[A-Z]{2,5}-\d+[a-z]?$/.test(id)) continue
+    if (!/^[A-Z]{2,6}-\d+[a-z]?$/.test(id)) continue
     const sources = (cells[3] ?? '').split(',').map(s => s.trim())
     if (sources.includes(key)) ids.push(id)
   }

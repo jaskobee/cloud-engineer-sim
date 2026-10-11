@@ -24,7 +24,7 @@ describe('facts register in the UI', () => {
     for (const rule of rules.values()) {
       for (const s of rule.sources) expect(s.url).toMatch(/^https:\/\/learn\.microsoft\.com\//)
     }
-    const unknownKeys = [...FACTS.matchAll(/^\|\s*[A-Z]{2,5}-\d+[a-z]?\s*\|.*\|\s*([^|]*?)\s*\|\s*[A-Z][^|]*\|\s*$/gm)]
+    const unknownKeys = [...FACTS.matchAll(/^\|\s*[A-Z]{2,6}-\d+[a-z]?\s*\|.*\|\s*([^|]*?)\s*\|\s*[A-Z][^|]*\|\s*$/gm)]
       .flatMap(m => (m[1] ?? '').split(',').map(k => k.trim()))
       .filter(k => k.startsWith('L-') && ![...rules.values()].some(r => r.sources.some(s => s.key === k)))
     expect(unknownKeys).toEqual([])
