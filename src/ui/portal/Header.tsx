@@ -21,6 +21,7 @@ import { INFO_TOPICS } from '../../missions/index.ts'
 import { PLAYER_PRINCIPAL } from '../../store/gameStore.ts'
 import type { ThemeChoice } from '../../store/persistence.ts'
 import { useGame } from '../gameContext.ts'
+import { useStableWorld } from './useStableWorld.ts'
 import { TimeControls } from '../TimeControls.tsx'
 import { searchPortal, type SearchHit } from './services.ts'
 import { useThemeChoice } from './themeContext.ts'
@@ -67,7 +68,7 @@ export function Header({ onMenu, narrow, onTicket, ticketBadge }: { onMenu: () =
 }
 
 function GlobalSearch() {
-  const world = useGame(s => s.world)
+  const world = useStableWorld()
   const navigate = useGame(s => s.navigate)
   const [query, setQuery] = useState('')
   const [listOpen, setListOpen] = useState(false)

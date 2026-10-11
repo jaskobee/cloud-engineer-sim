@@ -2,6 +2,7 @@ import { Button, MessageBar, MessageBarBody, MessageBarTitle, Spinner } from '@f
 import { azure } from '../../engine/index.ts'
 import { formatDuration, formatSimTime } from '../format.ts'
 import { useGame } from '../gameContext.ts'
+import { useStableWorld } from './useStableWorld.ts'
 import { typeLabel } from '../resourceKinds.ts'
 import { PageFrame } from './PageFrame.tsx'
 import { routeForResource } from './route.ts'
@@ -16,7 +17,7 @@ export function DeploymentPage({ id }: { id: string }) {
   const now = useGame(s => s.world.clock.now)
   const epochMs = useGame(s => s.world.clock.epochMs)
   const subscriptions = useGame(s => s.world.tenant.subscriptions)
-  const world = useGame(s => s.world)
+  const world = useStableWorld()
   const navigate = useGame(s => s.navigate)
   if (!deployment) {
     return <PageFrame title="Deployment"><p className="empty">This deployment is no longer in the history (ARM-10 keeps the newest 800 per resource group).</p></PageFrame>

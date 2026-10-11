@@ -3,6 +3,7 @@ import type { SectionProps } from './types.ts'
 import { Link } from '@fluentui/react-components'
 import { azure, type ArmId } from '../../../engine/index.ts'
 import { useGame } from '../../gameContext.ts'
+import { useStableWorld } from '../useStableWorld.ts'
 import { essentialsRows } from '../resourceFacts.ts'
 import { routeForResource } from '../route.ts'
 
@@ -34,7 +35,7 @@ export function Essentials({ target, world }: SectionProps) {
 
 /** A link to another resource's page, or plain text when it doesn't exist (any more). */
 export function ResourceLink({ id, children }: { id: ArmId | null | undefined; children?: ReactNode }) {
-  const world = useGame(s => s.world)
+  const world = useStableWorld()
   const navigate = useGame(s => s.navigate)
   if (!id) return <>None</>
   const r = world.tenant.resources[azure.armKey(id)] ?? world.tenant.resourceGroups[azure.armKey(id)]

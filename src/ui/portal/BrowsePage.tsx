@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Badge, Button, Input, ToolbarButton } from '@fluentui/react-components'
 import { Add20Regular, ArrowClockwise20Regular, Filter20Regular } from '@fluentui/react-icons'
 import { useGame } from '../gameContext.ts'
+import { useStableWorld } from './useStableWorld.ts'
 import { kindForType } from '../resourceKinds.ts'
 import { browseRows } from './browse.ts'
 import { PageFrame } from './PageFrame.tsx'
@@ -10,7 +11,7 @@ import { TypeIcon } from './ServiceIcon.tsx'
 
 /** A service list (PORTAL-5, PORTAL-6, PORTAL-8): + Create, Refresh, a filter and the grid. */
 export function BrowsePage({ type }: { type: string }) {
-  const world = useGame(s => s.world)
+  const world = useStableWorld()
   const navigate = useGame(s => s.navigate)
   const startCreate = useGame(s => s.startCreate)
   const [filter, setFilter] = useState('')

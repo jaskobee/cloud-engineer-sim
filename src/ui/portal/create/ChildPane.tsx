@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Button, Checkbox, Field } from '@fluentui/react-components'
 import { azure, type Refusal, type Resource, type World } from '../../../engine/index.ts'
 import { useGame } from '../../gameContext.ts'
+import { useStableWorld } from '../useStableWorld.ts'
 import { RefusalNotice } from '../../RefusalNotice.tsx'
 import { childCommand, initialChild, SERVICE_TAGS } from './childCommands.ts'
 import type { Values } from './commands.ts'
@@ -13,7 +14,7 @@ import { FormSection, SelectField, SimNote, TextField, type Set } from './fields
  * PORTAL-17s alert rule). The button validates the same command the engine runs, then sends it.
  */
 export function ChildPane({ kind, preset }: { kind: string; preset: Record<string, string> }) {
-  const world = useGame(s => s.world)
+  const world = useStableWorld()
   const check = useGame(s => s.check)
   const dispatch = useGame(s => s.dispatch)
   const close = useGame(s => s.closeContextPane)

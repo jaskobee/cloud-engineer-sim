@@ -1,6 +1,7 @@
 import { useContext, useMemo, useRef, useState } from 'react'
 import { Button, MessageBar, MessageBarBody, MessageBarTitle, Tab, TabList } from '@fluentui/react-components'
 import { GameStoreContext, useGame } from '../../gameContext.ts'
+import { useStableWorld } from '../useStableWorld.ts'
 import { RefusalNotice } from '../../RefusalNotice.tsx'
 import { routeForResource } from '../route.ts'
 import { buildCommands, canCreate, reviewKey, targetIdOf, type Review, type Values } from './commands.ts'
@@ -16,7 +17,7 @@ const REVIEW = { id: 'review', label: 'Review + create', rule: 'PORTAL-6' }
  */
 export function Wizard({ kind, preset }: { kind: string; preset: Record<string, string> }) {
   const store = useContext(GameStoreContext)
-  const world = useGame(s => s.world)
+  const world = useStableWorld()
   const checkAll = useGame(s => s.checkAll)
   const dispatch = useGame(s => s.dispatch)
   const navigate = useGame(s => s.navigate)

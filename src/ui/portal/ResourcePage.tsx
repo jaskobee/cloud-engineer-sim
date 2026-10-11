@@ -1,6 +1,7 @@
 import { azure, type ArmId, type Resource } from '../../engine/index.ts'
 import { infoTopicForType } from '../../missions/index.ts'
 import { useGame } from '../gameContext.ts'
+import { useStableWorld } from './useStableWorld.ts'
 import { InfoButton } from '../Info.tsx'
 import { typeLabel } from '../resourceKinds.ts'
 import { useMediaQuery } from '../useMediaQuery.ts'
@@ -16,7 +17,7 @@ import { ServiceMenu, ServiceMenuSelect } from './ServiceMenu.tsx'
  * section's command bar and content. A resource that no longer exists says so instead of crashing.
  */
 export function ResourcePage({ id, section }: { id: ArmId; section: string }) {
-  const world = useGame(s => s.world)
+  const world = useStableWorld()
   const navigate = useGame(s => s.navigate)
   const narrow = useMediaQuery('(max-width: 900px)')
   const target = world.tenant.resources[azure.armKey(id)] ?? world.tenant.resourceGroups[azure.armKey(id)]
