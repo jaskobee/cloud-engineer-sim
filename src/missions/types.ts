@@ -41,6 +41,36 @@ export interface PathStep {
   target: PathTarget
 }
 
+/** One value of a build step: what to enter, and why (Guided "exact recipe"). */
+export interface BuildSetting {
+  label: string
+  value: string
+  why: string
+  /** AZURE_FACTS rules behind the value or the reason. */
+  rules: readonly string[]
+}
+
+/**
+ * One step of a Guided build plan. The values are a recipe, not a requirement: `done` reads relationships (never
+ * names), and the objectives stay the client's real checks.
+ */
+export interface BuildStep {
+  id: string
+  title: string
+  /** What and why, in a sentence or two. */
+  intro: string
+  settings: readonly BuildSetting[]
+  portalPath: readonly PathStep[]
+  done: (world: World) => boolean
+}
+
+export interface BuildPlan {
+  /** The stage the plan belongs to. */
+  stage: string
+  intro: string
+  steps: readonly BuildStep[]
+}
+
 export interface ObjectiveDef {
   id: string
   /** The client's words (Standard and Expert modes). */
@@ -141,6 +171,8 @@ export interface MissionDef {
   stages: readonly StageDef[]
   report: ReportDef
   certifications: readonly string[]
+  /** Guided mode's step-by-step recipe for one stage (the build). */
+  buildPlan?: BuildPlan
   /** Finds the resources portal paths point at, by role (relationships, like the checks). Null: not there yet. */
   roles?: Readonly<Record<string, (world: World) => string | null>>
   /** The connections to watch on the canvas, found by role in the current world. */

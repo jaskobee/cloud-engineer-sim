@@ -1,4 +1,4 @@
-import { azure, dispatch, hasRunningDeployments, step, TICK_MS, type Refusal, type World } from '../../src/engine/index.ts'
+import { azure, DEPLOYMENT_COMMAND, dispatch, hasRunningDeployments, step, TICK_MS, type Refusal, type World } from '../../src/engine/index.ts'
 import { objectiveStatus, PIXELFORGE_LAUNCH_DAY, registryFor, startMission, systemsFor, OFFICE_IP } from '../../src/missions/index.ts'
 
 /** Playing "PixelForge: Launch Day" headless, the way a player would: commands and time only. */
@@ -64,6 +64,8 @@ export interface Design {
   dbPublicIp: boolean
   locations: string[]
   vmSuffix: string
+  /** `portal`: the VM wizard's one deployment (public IP, NIC, VM; ARM-15s). `nicFirst`: NICs created first, then attached. */
+  vmCreate: 'portal' | 'nicFirst'
 }
 
 const rule = (name: string, priority: number, props: Record<string, unknown>) => ({
@@ -85,6 +87,7 @@ export const INTENDED: Design = {
   dbPublicIp: false,
   locations: ['emea-nl-ams-azr', 'emea-gb-db3-azr', 'emea-fr-pra-edge', 'emea-ru-msa-edge', 'emea-se-sto-edge'],
   vmSuffix: '01',
+  vmCreate: 'portal',
 }
 
 /** A different but valid design: other names and ranges, NSGs on the NICs, other priorities. */
@@ -98,6 +101,7 @@ export const ALTERNATIVE: Design = {
   dbPublicIp: false,
   locations: ['emea-nl-ams-azr', 'emea-gb-db3-azr', 'us-va-ash-azr', 'apac-sg-sin-azr', 'emea-fr-pra-edge', 'latam-br-gru-edge'],
   vmSuffix: 'a',
+  vmCreate: 'nicFirst',
 }
 
 /** Build a design end to end: network, VMs, apps, monitoring. Returns the world and the IDs a test needs. */
@@ -120,24 +124,41 @@ export function build(world: World, d: Design) {
   const onSubnet = d.nsgOn === 'subnet'
   w = act(w, 'arm/subnets/write', { virtualNetworkId: vnetId, name: 'game', addressPrefix: d.gameSubnet, networkSecurityGroupId: onSubnet ? gameNsg : null })
   w = act(w, 'arm/subnets/write', { virtualNetworkId: vnetId, name: 'data', addressPrefix: d.dataSubnet, networkSecurityGroupId: onSubnet ? dataNsg : null })
-  w = act(w, 'arm/publicIPAddresses/write', { ...base, name: 'pip-game', sku: { name: 'Standard' }, publicIPAllocationMethod: 'Static' })
-  if (d.dbPublicIp) w = act(w, 'arm/publicIPAddresses/write', { ...base, name: 'pip-db', sku: { name: 'Standard' }, publicIPAllocationMethod: 'Static' })
-  w = act(w, 'arm/networkInterfaces/write', {
-    ...base, name: 'nic-game', subnetId: `${vnetId}/subnets/game`, publicIPAddressId: id(azure.PUBLIC_IP_TYPE, 'pip-game'),
-    networkSecurityGroupId: onSubnet ? null : gameNsg,
+  const vmPayload = (name: string, nicId: string) => ({
+    ...base, name, vmSize: 'Standard_B2s_v2', image: 'Ubuntu2204', osDiskType: 'StandardSSD_LRS', adminUsername: 'pixelops', networkInterfaceId: nicId,
   })
-  w = act(w, 'arm/networkInterfaces/write', {
-    ...base, name: 'nic-db', subnetId: `${vnetId}/subnets/data`, publicIPAddressId: d.dbPublicIp ? id(azure.PUBLIC_IP_TYPE, 'pip-db') : null,
-    networkSecurityGroupId: onSubnet ? null : dataNsg,
-  })
-  for (const [name, nic] of [[`vm-game-${d.vmSuffix}`, 'nic-game'], [`vm-db-${d.vmSuffix}`, 'nic-db']] as const) {
-    w = act(w, 'arm/virtualMachines/write', {
-      ...base, name, vmSize: 'Standard_B2s_v2', image: 'Ubuntu2204', osDiskType: 'StandardSSD_LRS', adminUsername: 'pixelops', networkInterfaceId: id(azure.NIC_TYPE, nic),
+  if (d.vmCreate === 'portal') {
+    // Create a virtual machine › Networking (PORTAL-20): the NIC (and a new public IP) come with the VM.
+    for (const [name, subnet, publicIp, nsg] of [[`vm-game-${d.vmSuffix}`, 'game', true, gameNsg], [`vm-db-${d.vmSuffix}`, 'data', d.dbPublicIp, dataNsg]] as const) {
+      const pipId = id(azure.PUBLIC_IP_TYPE, `${name}-ip`)
+      const nicId = id(azure.NIC_TYPE, `${name}-nic`)
+      w = act(w, DEPLOYMENT_COMMAND, {
+        resources: [
+          ...(publicIp ? [{ type: 'arm/publicIPAddresses/write', payload: { ...base, name: `${name}-ip`, sku: { name: 'Standard', tier: 'Regional' }, publicIPAllocationMethod: 'Static', publicIPAddressVersion: 'IPv4' } }] : []),
+          { type: 'arm/networkInterfaces/write', payload: { ...base, name: `${name}-nic`, subnetId: `${vnetId}/subnets/${subnet}`, privateIPAllocationMethod: 'Dynamic', publicIPAddressId: publicIp ? pipId : null, networkSecurityGroupId: onSubnet ? null : nsg } },
+          { type: 'arm/virtualMachines/write', payload: vmPayload(name, nicId) },
+        ],
+      })
+    }
+  } else {
+    w = act(w, 'arm/publicIPAddresses/write', { ...base, name: 'pip-game', sku: { name: 'Standard' }, publicIPAllocationMethod: 'Static' })
+    if (d.dbPublicIp) w = act(w, 'arm/publicIPAddresses/write', { ...base, name: 'pip-db', sku: { name: 'Standard' }, publicIPAllocationMethod: 'Static' })
+    w = act(w, 'arm/networkInterfaces/write', {
+      ...base, name: 'nic-game', subnetId: `${vnetId}/subnets/game`, publicIPAddressId: id(azure.PUBLIC_IP_TYPE, 'pip-game'),
+      networkSecurityGroupId: onSubnet ? null : gameNsg,
     })
+    w = act(w, 'arm/networkInterfaces/write', {
+      ...base, name: 'nic-db', subnetId: `${vnetId}/subnets/data`, publicIPAddressId: d.dbPublicIp ? id(azure.PUBLIC_IP_TYPE, 'pip-db') : null,
+      networkSecurityGroupId: onSubnet ? null : dataNsg,
+    })
+    for (const [name, nic] of [[`vm-game-${d.vmSuffix}`, 'nic-game'], [`vm-db-${d.vmSuffix}`, 'nic-db']] as const) {
+      w = act(w, 'arm/virtualMachines/write', vmPayload(name, id(azure.NIC_TYPE, nic)))
+    }
   }
   w = run(w, 5_000)
-  const dbIp = azure.privateIpOf(azure.getResource(w, id(azure.NIC_TYPE, 'nic-db'))!)
-  const gameIp = String(azure.getResource(w, id(azure.PUBLIC_IP_TYPE, 'pip-game'))?.properties.ipAddress)
+  const dbIp = azure.privateIpOf(azure.primaryNicOf(w, azure.getResource(w, vmDb)!)!)
+  const gamePip = azure.ipConfigurationsOf(azure.primaryNicOf(w, azure.getResource(w, vmGame)!)!)[0]?.properties.publicIPAddress?.id ?? ''
+  const gameIp = String(azure.getResource(w, gamePip)?.properties.ipAddress)
   // The client deploys its apps on the VMs the player names (Simulated app section, RUN-1s).
   w = act(w, 'scenario/setWorkload', { vmId: vmDb, workload: { kind: 'postgres', port: 5432 } }, 'scenario')
   w = act(w, 'scenario/setWorkload', { vmId: vmGame, workload: { kind: 'game-api', port: 443, database: { ip: dbIp, port: 5432 } } }, 'scenario')

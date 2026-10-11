@@ -12,6 +12,7 @@ const FACTS = factIds(readFileSync(path.resolve(import.meta.dirname, '../../Docs
 const allPaths = () => [
   ...MISSION.objectives.map(o => [o.id, o.portalPath ?? []] as const),
   ...MISSION.stages.filter(s => s.portalPath).map(s => [`stage ${s.id}`, s.portalPath ?? []] as const),
+  ...(MISSION.buildPlan?.steps ?? []).map(s => [`plan ${s.id}`, s.portalPath] as const),
 ]
 
 describe('Guided portal paths (D-7, PORTAL rules)', () => {

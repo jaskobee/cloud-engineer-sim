@@ -4,6 +4,11 @@ import {
   SOME_INTERNET_IP, subnetPrefixOf, vms, vmsRunning,
 } from './checks.ts'
 import { allObjectivesMet, judgeReport } from './engine.ts'
+import { anchorStep, res, sec, svc } from './pathSteps.ts'
+import { BUILD_PLAN, BUILD_ROLES } from './pixelforge-build-plan.ts'
+import { OFFICE_IP, REGION } from './pixelforge-shared.ts'
+
+export { OFFICE_IP }
 import type {
   CheckResult, Condition, MissionDef, MissionFlow, ObjectiveDef, PathStep, ReportDef } from './types.ts'
 
@@ -18,11 +23,8 @@ const SUBSCRIPTION = { subscriptionId: '7b3e1d52-4c8a-4f19-9e6d-2a5c8f0b3d71', d
 const LENA = { id: 'lena', displayName: 'Lena Vogt', role: 'CTO, PixelForge Games', principalName: 'lena@pixelforge.example' }
 const MIA = { id: 'mia', displayName: 'Mia Becker', role: 'Developer, PixelForge Games', principalName: 'mia@pixelforge.example' }
 const JONAS = { id: 'jonas', displayName: 'Jonas Richter', role: 'External security consultant', principalName: 'jonas@contoso-security.example' }
-/** The office's address from the ticket (documentation range 203.0.113.0/24). */
-export const OFFICE_IP = '203.0.113.10'
 const MINUTE = 60_000
 const BASELINE_MS = 10 * MINUTE
-const REGION = 'westeurope'
 
 // ── Who is who: by what runs where, never by name ──────────────────────────────────────────────
 
@@ -363,11 +365,6 @@ const ROLES: Record<string, (world: World) => string | null> = {
   },
 }
 
-const svc = (id: string, label: string): PathStep => ({ label, rule: id === 'createResource' ? 'PORTAL-2' : 'PORTAL-5', target: { kind: 'service', id } })
-const res = (role: string, label: string): PathStep => ({ label, rule: 'PORTAL-5', target: { kind: 'resource', role } })
-const sec = (section: string, label: string, rule: string): PathStep => ({ label, rule, target: { kind: 'section', section } })
-const anchorStep = (id: string, label: string, rule: string): PathStep => ({ label, rule, target: { kind: 'anchor', id } })
-
 const INBOUND_RULE = (role: string, label: string): PathStep[] => [
   svc('networkSecurityGroups', 'Network security groups'), res(role, label),
   sec('inbound', 'Inbound security rules', 'PORTAL-12'), anchorStep('nsg:inbound:add', '+ Add', 'PORTAL-12'),
@@ -417,7 +414,8 @@ export const PIXELFORGE_LAUNCH_DAY: MissionDef = {
     ]
   },
   objectives: OBJECTIVES.map(o => ({ ...o, ...(PATHS[o.id] ? { portalPath: PATHS[o.id] } : {}) })),
-  roles: ROLES,
+  roles: { ...ROLES, ...BUILD_ROLES },
+  buildPlan: BUILD_PLAN,
   stages: [
     {
       id: 'build',

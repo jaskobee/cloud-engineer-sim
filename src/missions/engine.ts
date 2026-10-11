@@ -2,7 +2,7 @@ import {
   ASSISTANCE_MODES, createWorld, dispatch, hasRunningDeployments, invalid, step, SYSTEMS, TICK_MS,
   type AssistanceMode, type CommandHandler, type MissionMessage, type MissionReport, type MissionState, type Registry, type System, type World,
 } from '../engine/index.ts'
-import type { CheckResult, MessageDef, MissionContext, MissionDef, ReportDef, StageDef } from './types.ts'
+import type { BuildPlan, CheckResult, MessageDef, MissionContext, MissionDef, ReportDef, StageDef } from './types.ts'
 
 /**
  * The mission engine (step 9). A mission changes the world the same two ways everything else does:
@@ -211,4 +211,10 @@ export function startMission(def: MissionDef, seed: string, registry: Registry, 
   }
   w = run(w, 'mission/start', SCENARIO, { missionId: def.id, mode })
   return step(w, TICK_MS, systemsFor(def, registry))
+}
+
+/** The build step to do next: the first one not done (`steps.length` once all are). Steps may be done out of order. */
+export function currentBuildStep(plan: BuildPlan, world: World): number {
+  const i = plan.steps.findIndex(step => !step.done(world))
+  return i === -1 ? plan.steps.length : i
 }
