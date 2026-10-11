@@ -61,6 +61,41 @@ test('start screen → take the job → ticket, portal pages, map, hints and INF
   expect(errors).toEqual([])
 })
 
+test('portal workflow: Create a resource → wizard → Review + create → deployment → Go to resource → Add inbound security rule', async ({ page }) => {
+  const errors = trackErrors(page)
+  await page.goto('./')
+  await page.getByRole('button', { name: 'Take the job' }).click()
+  await page.locator('.portal-header').getByRole('button', { name: '16×' }).click()
+
+  await page.getByRole('button', { name: 'Create a resource', exact: true }).first().click()
+  await page.locator('.all-services').getByRole('button', { name: /^Network security group/ }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'Create network security group' })).toBeVisible()
+  await page.getByRole('textbox', { name: /Network security group name/ }).fill('nsg-snet-game')
+  const footer = page.locator('.wizard-footer')
+  await footer.getByRole('button', { name: 'Review + create', exact: true }).click()
+  await expect(page.getByText('Validation passed')).toBeVisible()
+  await footer.getByRole('button', { name: 'Create', exact: true }).click()
+
+  // The deployment page, then Go to resource once it has finished (PORTAL-8, PORTAL-9).
+  await expect(page.getByText('Operation details')).toBeVisible()
+  await page.getByRole('button', { name: 'Go to resource' }).click({ timeout: 15_000 })
+  await expect(page.getByRole('heading', { level: 1, name: /nsg-snet-game \| Overview/ })).toBeVisible()
+
+  // Settings > Inbound security rules > + Add opens the side pane (PORTAL-12).
+  await page.locator('.service-menu').getByRole('button', { name: 'Inbound security rules' }).click()
+  await page.locator('.command-bar').getByRole('button', { name: 'Add' }).click()
+  await expect(page.getByRole('heading', { name: 'Add inbound security rule' })).toBeVisible()
+  await page.getByRole('textbox', { name: /Destination port ranges/ }).fill('443')
+  await page.getByRole('textbox', { name: /^Name/ }).fill('Allow-HTTPS')
+  await page.locator('.pane-footer').getByRole('button', { name: 'Add' }).click()
+  await expect(page.locator('.rules-grid').getByRole('button', { name: 'Allow-HTTPS', exact: true })).toBeVisible()
+
+  // The bell lists the deployment with Go to resource.
+  await page.getByRole('button', { name: 'Notifications' }).click()
+  await expect(page.getByText('Deployment succeeded').first()).toBeVisible()
+  expect(errors).toEqual([])
+})
+
 test('the game saves and continues after a reload', async ({ page }) => {
   const errors = trackErrors(page)
   await page.goto('./')

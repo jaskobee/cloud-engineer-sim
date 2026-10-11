@@ -34,6 +34,10 @@ Claims to check, in this order of importance:
    `technical` requirements, `hints`, review `why` text, messages, report options), refusal messages, and UI copy in
    `src/ui/` (form hints, labels, `resourceKinds.ts` blurbs, inspector facts).
 4. **Portal fidelity**: field names, defaults, option lists and wording the game presents as "what the portal does".
+   Every service name, service-menu item and group, create tab, pane title, button name and Guided portal path step
+   the UI shows must be backed by a PORTAL rule (`src/ui/portal/menus.ts`, `services.ts`, `create/wizards.tsx`,
+   `create/ChildPane.tsx`, `panes.ts`, `PATHS` in mission data). Check each PORTAL rule's quote against its Learn page,
+   and flag any label the UI shows without one.
 
 ## How to verify a claim
 

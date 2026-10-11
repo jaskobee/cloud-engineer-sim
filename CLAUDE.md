@@ -47,7 +47,7 @@ src/engine/   headless simulation core (world, clock, operations, deployments, f
 src/engine/azure/  Azure resource types: ARM IDs, CIDR maths, names, command handlers     [step 4]
 src/missions/ mission engine + mission data                                              [from step 9]
 src/store/    Zustand store + tick loop                                                   [from step 3]
-src/ui/       React workspace, canvas, inspector, panels
+src/ui/       React UI; src/ui/portal/ is the portal shell (D-7), src/ui/canvas/ the map
 tests/        engine and mission tests (Vitest)
 Docs/         vision, rules, facts register, decisions
 ```
@@ -75,20 +75,19 @@ handlers registered in `AZURE_COMMANDS` (the store's default registry). Commands
 ## Store and UI (step 3)
 
 `src/store/gameStore.ts`: Zustand (vanilla) store `{ world, session, lastRefusal }`. The UI changes the world
-only through `store.dispatch(command)` (caller defaults to the player) and time through `tick(realMs)`.
+only through `store.dispatch(command)` (caller defaults to the player) and time through `tick(realMs)`. `check` and
+`checkAll` dry-run one command or several in order (Review + create with Create new resource group).
 `tickLoop.ts` drives it from animation frames (fake scheduler in tests), `persistence.ts` is the guarded
 localStorage save slot (T-6). Components read with `useGame(selector)` and select the smallest value they need.
-The bottom panel lists only tools that work.
+The UI shows only tools that work (no fake controls).
 
 ## Building in the UI (step 4b)
 
-*Create a resource* opens in the inspector pane (`CreatePanel.tsx`): type picker → form → `ReviewCreate.tsx`, which
-dry-runs the exact command (`store.check`) before **Create** dispatches it. Editing is the same form with
-`preset.mode = 'edit'` (a write to the same name updates). `RefusalNotice.tsx` says whose rule it is: an Azure
-rule, or a case the simulator doesn't model; it shows the rule ID and its Learn link. Those come from
-`Docs/AZURE_FACTS.md` itself, imported at build time (`src/ui/facts.ts`), so the register is the only copy.
-`ResourceList.tsx` is a temporary list in the canvas area until the canvas (step 7). New worlds include the
-made-up sandbox subscription (`SANDBOX_SUBSCRIPTION`).
+Superseded by the portal shell (D-7, below): create wizards and side panes replaced the inspector form.
+`RefusalNotice.tsx` says whose rule it is: an Azure rule, or a case the simulator doesn't model; it shows the rule ID
+and its Learn link. Those come from `Docs/AZURE_FACTS.md` itself, imported at build time (`src/ui/facts.ts`), so the
+register is the only copy. `ResourceList.tsx` is the map on narrow screens. New worlds include the made-up sandbox
+subscription (`SANDBOX_SUBSCRIPTION`).
 
 ## Network flow engine (step 5)
 
@@ -99,7 +98,7 @@ by priority, first match wins, defaults last (NSG-1, NSG-3), and match the VM's 
 follow NSG-15/15s: 168.63.129.16 is in `VirtualNetwork` too, so `AllowVNetInBound` (65000) decides health probes
 before `AllowAzureLoadBalancerInBound`. With no NSG at all, internet inbound is denied (NSG-8, NW-7s) and anything
 else is not modelled (NSG-8u). Built on it: `ipFlowVerify` (NW-1/2/6s) and `effectiveSecurityRules` (NW-4, VM-5),
-shown as bottom-panel tabs (`NetworkWatcher.tsx`, `BottomTools.tsx`). Stateful flow records (NSG-4: rule changes
+shown in Network Watcher > Network diagnostic tools and on NIC/NSG pages (`NetworkWatcher.tsx`). Stateful flow records (NSG-4: rule changes
 only affect new connections) belong to the traffic system (step 8), not to the evaluator.
 
 ## Deployment engine (step 6)
@@ -112,7 +111,8 @@ group writes stay synchronous (ARM-6). Writing to, or referencing, a resource th
 not modelled (ARM-11u) in both `dispatch` and `dryRun`. VMs: power state `creating` → `running` (`vmPowerSystem`,
 VM-19s). Security rules apply once their write succeeds (ARM-14s). History: newest 800 per resource group (ARM-10).
 Tests: `ok()` in `tests/engine/azure/fixtures.ts` waits for the deployment (`settle`); `start()` doesn't.
-UI: Deployments tab (`DeploymentsPanel.tsx`), `Creating…` badges in the resource list, Create switches to Deployments.
+UI: the deployment page after Create (`portal/DeploymentPage.tsx`), resource group > Deployments
+(`DeploymentsPanel.tsx`), `Creating…` badges in lists and on pages, notifications.
 
 ## Architecture canvas (step 7)
 
@@ -121,8 +121,9 @@ Follow `.claude/skills/visual-infrastructure/SKILL.md` (v1.0, decisions D-4/D-5)
 RG → VNet → subnet → compute unit (a VM drawn through its NIC), deterministic auto-layout, association lines from
 `azure.dependenciesOf` (`src/engine/azure/dependencies.ts`), traffic lines only from `ipFlowVerify` via
 `evaluateWatchedFlow`. Watched flows and the layer are view state in `session.ui.canvas` (`watchFlow`,
-`unwatchFlow`, `setCanvasLayer`); a selected flow is `flow:<id>` and opens `FlowInspector.tsx`. React Flow
-(`@xyflow/react`) is lazy-loaded; below 900 px the resource list replaces the canvas. Azure icons (D-5) go
+`unwatchFlow`, `setCanvasLayer`); a watched flow opens `FlowInspector.tsx` in the side pane. React Flow
+(`@xyflow/react`) is lazy-loaded; below 900 px the resource list replaces the canvas. Since D-7 the canvas is the map
+(Map toggle, Network Watcher > Topology, Virtual network > Diagram with `{ vnetId }` scope). Azure icons (D-5) go
 unmodified into `public/azure-icons/` once downloaded (the container's proxy blocks the download).
 
 ## Runtime: apps, players, metrics (step 8a)
@@ -134,8 +135,8 @@ the `beta-launch` player profile on/off (`traffic.ts`). Systems, in order after 
 players per sim second, 20-min sessions grouped per minute; new connections need a running VM, a public IP (PIP-10s),
 an allowed inbound 443 and an `up` app; established sessions survive rule changes, NSG-4), `metricsSystem` (MON-6
 names, one sample per sim minute for running VMs). Service state lives in `world.runtime[vm].service`, sessions in
-`world.traffic`, samples in `world.telemetry.metrics`. UI: `SimulatedApp.tsx` in the VM inspector, app status on
-canvas cards, Metrics tab (`MetricsPanel.tsx`, dataviz rules: one axis per chart, crosshair, keyboard, table).
+`world.traffic`, samples in `world.telemetry.metrics`. UI: `SimulatedApp.tsx` on the VM's Overview, app status on
+canvas cards, VM > Monitoring > Metrics (`MetricsPanel.tsx`, dataviz rules: one axis per chart, crosshair, keyboard, table).
 Tests: `tests/engine/azure/runtime.test.ts`, fixtures `pixelForge()` / `pixelForgeWithApps()`.
 
 ## Monitoring: Application Insights, availability tests, alerts (step 8b)
@@ -148,9 +149,9 @@ Tests: `tests/engine/azure/runtime.test.ts`, fixtures `pixelForge()` / `pixelFor
 plus the simulated app (game API up → 200, degraded → 503, blocked → timeout). Rows are `AppAvailabilityResults`-shaped
 in `world.telemetry.availability`; the Availability metric is derived (`availabilityPercent`). `alertSystem` evaluates
 on `evaluationFrequency`: failed locations ≥ `failedLocationCount` fires one alert in `world.alerts.fired`, three clear
-checks resolve it (`autoMitigate`). UI: create forms in `CreatePanel.tsx`, inspector details, Availability tab
-(`AvailabilityPanel.tsx`: location × round grid as a table, newest results) and Alerts tab (`AlertsPanel.tsx`, badge
-when firing). Tests: `tests/engine/azure/monitoring.test.ts`, fixture `pixelForgeMonitored()`.
+checks resolve it (`autoMitigate`). UI: create wizards and the Add Standard test pane, resource pages, Application Insights >
+Availability (`AvailabilityPanel.tsx`: location × round grid as a table, newest results) and Monitor > Alerts
+(`AlertsPanel.tsx`); fired alerts are notifications. Tests: `tests/engine/azure/monitoring.test.ts`, fixture `pixelForgeMonitored()`.
 
 ## Mission engine (step 9)
 
@@ -189,6 +190,27 @@ objectives and the Concepts list (`session.ui.info`).
 (mission + seed) once; the Workspace records it when the mission completes. Smoke test: `e2e/smoke.e2e.ts` (start →
 mission → quest, canvas, hints, INFO, tools; save + continue; 390 px), `playwright.config.ts` serves `dist` with
 `vite preview` under the Pages base path.
+
+## Portal shell (D-7)
+
+Spec `Docs/specs/2026-10-11-portal-ui-design.md`, plan `Docs/plans/2026-10-11-portal-ui.md`. Fluent UI React v9
+(`@fluentui/react-components`, `@fluentui/react-icons`, exact versions) with `PortalTheme` (light/dark, Settings choice
+in its own storage key). `src/ui/portal/`:
+- **Navigation is a route** (`route.ts`, pure): `session.ui.nav = { route, back, map, contextPane, ticketOpen,
+  notificationsSeenAt }`; `navigate(route, { replace? })`, `goBack`, `toggleMap`, `openContextPane`. Breadcrumbs,
+  notifications (`notifications.ts`) and the current selection (`selectedIdOf`) are derived. `select(id)` and
+  `startCreate(req)` still work: child kinds and edits open a side pane, other kinds a wizard.
+- **Shell** (`Shell.tsx`): `Header` (Simulation badge, global search, Map, bell, Settings, Help = INFO topics, clock),
+  `PortalMenu`, `Breadcrumbs`, `WorkingPane`, `TicketPane` (the quest panel, docked right; a drawer below 900 px),
+  `ContextPaneHost`.
+- **Pages**: Home, All services, service lists (`BrowsePage`, `browse.ts`), resource pages (`ResourcePage`, service
+  menus as data in `menus.ts`, sections in `sections/`, Essentials from `resourceFacts.ts`), Monitor and Network
+  Watcher (`ServicePage`), create wizards (`create/wizards.tsx`, commands in `create/commands.ts`), side panes
+  (`create/ChildPane.tsx`, `create/childCommands.ts`), the deployment page, the map (`MapView`).
+- **Accuracy**: every service name, menu item, tab, pane title and Guided path step cites a **PORTAL** rule in
+  `Docs/AZURE_FACTS.md` (tests: `menus.test.ts`, `services.test.ts`, `tests/missions/paths.test.ts`). No Learn source,
+  no label. `data-guide` attributes mark the controls Guided paths highlight (`guide.ts`, `PortalPath.tsx`).
+- Mission data may carry `portalPath` (objectives, stages) and `roles` (find resources by relationship, like checks).
 
 ## Azure QA (accuracy checks against Microsoft Learn)
 

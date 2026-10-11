@@ -6,6 +6,10 @@ description: Use when building or changing the architecture canvas, the resource
 # Visual infrastructure
 
 > **v1.0 (2026-10-10).** Agreed with Jasko: decisions D-4 and D-5 in `Docs/DECISIONS.md`.
+> **v1.1 (2026-10-11), D-7:** the canvas is the *map* of the portal shell. It's opened by the header's Map toggle, by
+> Network Watcher > Topology and by Virtual network > Diagram (scoped to that network, `buildCanvasGraph(world, watched,
+> { vnetId })`). "The inspector" below now means the resource's page (clicking a node navigates to it) or, for a
+> watched flow, the side pane.
 
 ## Overview
 
@@ -118,8 +122,9 @@ Layers change emphasis, never data:
 
 ## Interaction
 
-- Click a node or edge to select it. `store.select(id)` opens the inspector. A traffic edge opens its verdict
-  with the stages in order, like IP flow verify.
+- Click a node or edge to select it. `store.select(id)` opens the resource's page (child resources open on their
+  parent's page, e.g. a subnet on its VNet's Subnets). A traffic edge opens its verdict in the side pane, with the
+  stages in order, like IP flow verify.
 - Hovering shows the reason behind any status.
 - Every node can be reached with the keyboard, and Enter selects it.
 - Zoom and pan. Fit to view on first load.

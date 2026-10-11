@@ -220,6 +220,7 @@ export const WIZARDS: Record<string, WizardDef> = {
       <>
         <ProjectDetails {...props} />
         <NameAndRegion {...props} nameLabel="Name" placeholder="log-pixelforge-prod" />
+        {/* MON-30: new workspaces get a default pay-as-you-go pricing tier (the ARM SKU name is PerGB2018). */}
         <FixedField label="Pricing tier" value="Pay-as-you-go (PerGB2018)" />
         <p className="form-section-hint">4 to 63 letters, numbers and hyphens. Data is kept 30 days by default; Application Insights tables keep 90 days.</p>
       </>
